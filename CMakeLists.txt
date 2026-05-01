@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/base/current_thread.cpp
     src/net/timer.cpp
     src/net/inet_address.cpp
     src/net/poller/defaut_poller.cpp
@@ -15,4 +16,6 @@ add_executable(${PROJECT_NAME}
     src/net/poller.cpp
     src/net/poller/epoll_poller.cpp
 )
+
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 

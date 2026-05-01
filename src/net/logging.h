@@ -7,8 +7,9 @@
 #include <mutex>
 #include <sstream>
 #include <string>
-#include <thread>
 #include <source_location>
+
+#include "../base/current_thread.h"
 
 namespace net
 {
@@ -53,14 +54,18 @@ namespace net
             auto us = duration_cast<microseconds>(now.time_since_epoch()).count() % 1000000LL;
 
             std::string time_str = std::format("{:%Y%m%d %H:%M:%S}", secs);
-            std::ostringstream tid_ss;
-            tid_ss << std::this_thread::get_id();
-            std::string thread_str = tid_ss.str();
 
             static const char* names[] = { "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL" };
             std::string lvl = names[static_cast<int>(level_)];
 
-            std::string header = std::format("{}.{:06} [{}] {} {}:{} - ", time_str, static_cast<long>(us), thread_str, lvl, file_, line_);
+            std::string header = std::format(
+                "{}.{:06} [{}] {} {}:{} - ",
+                time_str,
+                static_cast<long>(us),
+                base::CurrentThread::TidString(),
+                lvl,
+                file_,
+                line_);
 
             std::string msg = oss_.str();
 
