@@ -1,5 +1,3 @@
-// C++20 lightweight logging wrapper for the muduo tree
-// Provides stream-style logging with RAII flush and simple macros LOG20_*.
 #pragma once
 
 #include <chrono>

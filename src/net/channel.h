@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <functional>
-#include <string>
 
 #include <sys/epoll.h>
 
