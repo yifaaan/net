@@ -29,10 +29,10 @@ namespace net
 
         // 注册回调
         // 可读 -> 读 socket; 可写 -> 发送缓冲区; close/error -> 清理连接
-        auto SetReadCallback(ReadEventCallback cb) -> void { read_event_callback_ = std::move(cb); }
-        auto SetWriteCallback(EventCallback cb) -> void { write_event_callback_ = std::move(cb); }
-        auto SetCloseCallback(EventCallback cb) -> void { close_event_callback_ = std::move(cb); }
-        auto SetErrorCallback(EventCallback cb) -> void { error_event_callback_ = std::move(cb); }
+        auto SetReadCallback(ReadEventCallback cb) -> void { read_callback_ = std::move(cb); }
+        auto SetWriteCallback(EventCallback cb) -> void { write_callback_ = std::move(cb); }
+        auto SetCloseCallback(EventCallback cb) -> void { close_callback_ = std::move(cb); }
+        auto SetErrorCallback(EventCallback cb) -> void { error_callback_ = std::move(cb); }
 
         // 绑定TcpConnection
         void tie(const std::shared_ptr<void>& obj)
@@ -117,9 +117,9 @@ namespace net
 
         // 根据revents_ 调用相应的回调函数.
 
-        ReadEventCallback read_event_callback_;
-        EventCallback write_event_callback_;
-        EventCallback close_event_callback_;
-        EventCallback error_event_callback_;
+        ReadEventCallback read_callback_;
+        EventCallback write_callback_;
+        EventCallback close_callback_;
+        EventCallback error_callback_;
     };
 } // namespace net
