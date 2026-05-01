@@ -9,5 +9,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/net/timer.cpp
+    src/net/inet_address.cpp
 )
 
