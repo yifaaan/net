@@ -13,7 +13,7 @@ namespace net
     class Timer : public base::Noncopyable
     {
     public:
-        Timer(std::function<void()> callback, std::chrono::steady_clock::time_point, std::chrono::steady_clock::duration interval = std::chrono::steady_clock::duration::zero());
+        Timer(std::function<void()> callback, std::chrono::steady_clock::time_point expiration, std::chrono::steady_clock::duration interval = std::chrono::steady_clock::duration::zero());
 
         // 执行回调函数。
         void Run() const;
@@ -43,7 +43,7 @@ namespace net
         static uint64_t NumCreated() noexcept;
 
     private:
-        static std::atomic<uint64_t> num_created_;
+        inline static std::atomic<uint64_t> num_created_ = 0;
 
         std::function<void()> callback_;
         std::chrono::steady_clock::time_point expiration_;

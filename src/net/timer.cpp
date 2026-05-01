@@ -2,8 +2,6 @@
 
 namespace net
 {
-    std::atomic<uint64_t> Timer::num_created_ = 0;
-
     Timer::Timer(std::function<void()> callback, std::chrono::steady_clock::time_point expiration, std::chrono::steady_clock::duration interval)
         : callback_(std::move(callback)), expiration_(expiration), interval_(interval), sequence_(num_created_++)
     {
