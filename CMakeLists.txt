@@ -10,5 +10,9 @@ add_executable(${PROJECT_NAME}
     src/main.cpp
     src/net/timer.cpp
     src/net/inet_address.cpp
+    src/net/poller/defaut_poller.cpp
+    src/net/channel.cpp
+    src/net/poller.cpp
+    src/net/poller/epoll_poller.cpp
 )
 
