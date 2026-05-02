@@ -17,7 +17,7 @@ namespace net::base
         jthread_.reset();
     }
 
-    auto Thread::start() -> void
+    auto Thread::Start() -> void
     {
         started_ = true;
         // 等待线程，直到被调度运行起来

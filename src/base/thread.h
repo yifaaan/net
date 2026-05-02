@@ -12,13 +12,13 @@ namespace net::base
     class Thread : Noncopyable
     {
     public:
-        explicit Thread(std::function<void()>, std::string name = "");
+        explicit Thread(std::function<void()>, std::string name);
         ~Thread();
 
         Thread(const Thread&) = delete;
         Thread& operator=(const Thread&) = delete;
 
-        auto start() -> void;
+        auto Start() -> void;
         auto join() -> void;
 
         auto started() const noexcept -> bool { return started_; }
