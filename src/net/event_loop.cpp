@@ -1,5 +1,6 @@
 #include "event_loop.h"
 
+#include <algorithm>
 #include <sys/eventfd.h>
 #include <unistd.h>
 
@@ -65,7 +66,7 @@ namespace net
         quit_ = false;
         LOG_TRACE << "EventLoop " << this << " start looping";
 
-        while(!quit_)
+        while (!quit_)
         {
             active_channels_.clear();
             auto poll_return_time = poller_->Poll(kPollTimeMs, active_channels_);
@@ -110,6 +111,48 @@ namespace net
         if (n != sizeof(one))
         {
             LOG_ERROR << "EventLoop::HandleRead() reads " << n << " bytes instead of 8";
+        }
+    }
+
+    auto EventLoop::DoPendingFunctors() -> void
+    {
+        calling_pending_functors_ = true;
+        decltype(pending_functors_) tmp;
+        {
+            std::unique_lock lock(mutex_);
+            tmp.swap(pending_functors_);
+        }
+        for (auto&& f : tmp)
+        {
+            f();
+        }
+        calling_pending_functors_ = false;
+    }
+
+    auto EventLoop::RunInLoop(std::function<void()> cb) -> void
+    {
+        if (IsInLoopThread()) // 被当前线程调用
+        {
+            cb();
+        }
+        else
+        {
+            QueueInLoop(std::move(cb));
+        }
+    }
+
+    auto EventLoop::QueueInLoop(std::function<void()> cb) -> void
+    {
+        {
+            std::unique_lock lock(mutex_);
+            pending_functors_.emplace_back(std::move(cb));
+        }
+        // 被别的 IO 线程调用的，需要 WakeUp，下一轮进行处理。
+        // 或者，当前 IO 线程已经将 pending_functors_ swap出来了，正在执行暂存的回调
+        // 也需要Wakeup，否则下一轮 Loop时，可能会阻塞到 Poll，不会执行这个 cb
+        if (!IsInLoopThread() || calling_pending_functors_)
+        {
+            Wakeup();
         }
     }
 }
