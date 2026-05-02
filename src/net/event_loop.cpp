@@ -104,6 +104,21 @@ namespace net
         }
     }
 
+    auto EventLoop::UpdateChannel(Channel* channel) -> void
+    {
+        poller_->UpdateChannel(channel);
+    }
+
+    auto EventLoop::RemoveChannel(Channel* channel) -> void
+    {
+        poller_->RemoveChannel(channel);
+    }
+
+    auto EventLoop::HasChannel(Channel* channel) const -> bool
+    {
+        return poller_->HasChannel(channel);
+    }
+
     auto EventLoop::HandleRead() -> void
     {
         uint64_t one = 1;

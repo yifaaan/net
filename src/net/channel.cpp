@@ -1,6 +1,9 @@
 #include "channel.h"
+
 #include <chrono>
 #include <sys/poll.h>
+
+#include  "event_loop.h"
 
 namespace net
 {
@@ -34,12 +37,14 @@ namespace net
 
     auto Channel::Update() -> void
     {
-        // TODO: 更新Channel在Poller中的状态
+        // 更新Channel在Poller中的状态
+        loop_->UpdateChannel(this);
     }
 
     auto Channel::Remove() -> void
     {
-        // TODO: 从Poller中删除Channel
+        // 从Poller中删除Channel
+        loop_->RemoveChannel(this);
     }
 
     auto Channel::handleEventWithGuard(std::chrono::steady_clock::time_point receive_time) -> void
