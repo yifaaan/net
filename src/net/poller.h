@@ -20,14 +20,14 @@ namespace net
         virtual ~Poller();
 
         // 监听事件，调用 epoll_wait / poll，将就绪事件填入 active_channels。
-        // 必须在 loop 线程调用
+        // 必须在 EventLoop 线程调用
         virtual auto Poll(int timeout_ms, std::vector<Channel*>& active_channels) -> std::chrono::steady_clock::time_point = 0;
 
         // 注册或修改 Channel 的事件，对应 epoll_ctl 的 ADD / MOD 操作。
-        // 必须在 loop 线程调用
+        // 必须在 EventLoop 线程调用
         virtual auto UpdateChannel(Channel* channel) -> void = 0;
         // 从 Poller 中删除 Channel，对应 epoll_ctl 的 DEL 操作。
-        // 必须在 loop 线程调用
+        // 必须在 EventLoop 线程调用
         virtual auto RemoveChannel(Channel* channel) -> void = 0;
 
         // 判断 Poller 是否拥有 Channel

@@ -13,7 +13,7 @@ namespace net
 
     // Channel 把“某个 fd 的 IO 事件”封装成对象，供 EventLoop 统一调度。
     // Channel 不拥有 fd，fd 由 Socket/TcpConnection 等上层对象管理。
-    // 一个Event Loop 管理多个Channel
+    // 一个Event Loop 管理多个 Channel，每个 Channel 只属于某个 IO 线程
     class Channel : public base::Noncopyable
     {
     public:
@@ -23,7 +23,8 @@ namespace net
         Channel(EventLoop* loop, int fd);
         ~Channel();
 
-        // 在 EventLoop 中由 Poller 返回就绪事件后调用。
+        // 在 EventLoop 中， Poller 返回就绪事件后调用。
+        // 根据 revents_ 的值，分别调用不同的回调
         auto HandleEvent(std::chrono::steady_clock::time_point receive_time) -> void;
 
         // 注册回调
@@ -110,8 +111,9 @@ namespace net
         bool tied_; // 通过 tie_ 把 Channel 和 TcpConnection 绑定在一起。
         EventLoop* loop_;
         const int fd_;
+
         int events_; // 保存感兴趣的事件
-        int revents_; // 保存poller返回的具体事件
+        int revents_; // 保存poller返回的具体事件，由EventLoop/Poller设置
         int index_; // 在poller中的状态码（kNew/kAdded/kDeleted）
 
         // 根据revents_ 调用相应的回调函数.
