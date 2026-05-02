@@ -18,6 +18,8 @@ add_executable(${PROJECT_NAME}
     src/base/thread.cpp
     src/net/event_loop.cpp
     src/net/event_loop_thread.cpp
+    src/net/event_loop_thread_pool.cpp
+    src/net/socket.cpp
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
