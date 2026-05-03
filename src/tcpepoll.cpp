@@ -10,6 +10,7 @@
 #include <sys/epoll.h>
 #include <netinet/tcp.h> // TCP_NODELAY
 
+#include "event_loop.h"
 #include "inet_address.h"
 #include "socket.h"
 #include "epoll.h"
@@ -33,19 +34,13 @@ int main(int argc, char* argv[])
     server_sock.Bind(server_addr);
     server_sock.Listen();
 
-    net::Epoll ep;
-    auto server_channel = std::make_unique<net::Channel>(&ep, server_sock.fd());
+    net::EventLoop loop;
+
+    auto server_channel = std::make_unique<net::Channel>(loop.ep(), server_sock.fd());
     server_channel->EnableReading();
     server_channel->SetReadCallback(std::bind(&net::Channel::NewConnection, server_channel.get(), server_sock));
-    while (true) // 事件循环。
-    {
-        auto channels = ep.Wait();
-
-        for (auto ch : channels)
-        {
-            ch->HandleEvent();
-        }
-    }
+    
+    loop.Run();
 
     return 0;
 }

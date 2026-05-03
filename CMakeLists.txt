@@ -14,6 +14,7 @@ add_executable(${PROJECT_NAME}
     src/inet_address.cpp
     src/socket.cpp
     src/channel.cpp
+    src/event_loop.cpp
 )
 
 # 与 examples/echo 的 client 目标区分，避免重名
