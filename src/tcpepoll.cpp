@@ -63,29 +63,26 @@ int main(int argc, char* argv[])
         }
 
         // 如果infds>0，表示有事件发生的fd的数量。
-        for (int ii = 0; ii < infds; ii++) // 遍历epoll返回的数组evs。
+        for (int i = 0; i < infds; i++) // 遍历epoll返回的数组evs。
         {
-            if (evs[ii].events & EPOLLRDHUP) // 对方已关闭，有些系统检测不到，可以使用EPOLLIN，recv()返回0。
+            if (evs[i].events & EPOLLRDHUP) // 对方已关闭，有些系统检测不到，可以使用EPOLLIN，recv()返回0。
             {
-                std::cout << std::format("client(eventfd={}) disconnected.\n", evs[ii].data.fd);
-                ::close(evs[ii].data.fd); // 关闭客户端的fd。
+                std::cout << std::format("client(eventfd={}) disconnected.\n", evs[i].data.fd);
+                ::close(evs[i].data.fd); // 关闭客户端的fd。
             } //  普通数据  带外数据
-            else if (evs[ii].events & (EPOLLIN | EPOLLPRI)) // 接收缓冲区中有数据可以读。
+            else if (evs[i].events & (EPOLLIN | EPOLLPRI)) // 接收缓冲区中有数据可以读。
             {
-                if (evs[ii].data.fd == server_sock.fd()) // 如果是listenfd有事件，表示有新的客户端连上来。
+                if (evs[i].data.fd == server_sock.fd()) // 如果是listenfd有事件，表示有新的客户端连上来。
                 {
-                    struct sockaddr_in peer_addr;
-                    socklen_t len = sizeof(peer_addr);
-                    int clientfd = ::accept4(server_sock.fd(), (struct sockaddr*)&peer_addr, &len, SOCK_NONBLOCK);
+                    net::InetAddress client_addr{};
+                    auto client_sock = net::Socket{ server_sock.Accept(client_addr) };
 
-                    net::InetAddress client_addr{ peer_addr };
-
-                    std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n", clientfd, client_addr.ip(), client_addr.port());
+                    std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n", client_sock.fd(), client_addr.ip(), client_addr.port());
 
                     // 为新客户端连接准备读事件，并添加到epoll中。
-                    ev.data.fd = clientfd;
+                    ev.data.fd = client_sock.fd();
                     ev.events = EPOLLIN | EPOLLET; // 边缘触发。
-                    ::epoll_ctl(epollfd, EPOLL_CTL_ADD, clientfd, &ev);
+                    ::epoll_ctl(epollfd, EPOLL_CTL_ADD, client_sock.fd(), &ev);
                 }
                 else // 如果是客户端连接的fd有事件。
                 {
@@ -93,12 +90,12 @@ int main(int argc, char* argv[])
                     while (true) // 由于使用非阻塞IO，一次读取buffer大小数据，直到全部的数据读取完毕。
                     {
                         ::bzero(&buffer, sizeof(buffer));
-                        ssize_t nread = read(evs[ii].data.fd, buffer, sizeof(buffer));
+                        ssize_t nread = read(evs[i].data.fd, buffer, sizeof(buffer));
                         if (nread > 0) // 成功的读取到了数据。
                         {
                             // 把接收到的报文内容原封不动的发回去。
-                            std::cout << std::format("recv(eventfd={}):{}\n", evs[ii].data.fd, buffer);
-                            ::send(evs[ii].data.fd, buffer, strlen(buffer), 0);
+                            std::cout << std::format("recv(eventfd={}):{}\n", evs[i].data.fd, buffer);
+                            ::send(evs[i].data.fd, buffer, strlen(buffer), 0);
                         }
                         else if (nread == -1 && errno == EINTR) // 读取数据的时候被信号中断，继续读取。
                         {
@@ -110,20 +107,20 @@ int main(int argc, char* argv[])
                         }
                         else if (nread == 0) // 客户端连接已断开。
                         {
-                            std::cout << std::format("client(eventfd={}) disconnected.\n", evs[ii].data.fd);
-                            ::close(evs[ii].data.fd); // 关闭客户端的fd。
+                            std::cout << std::format("client(eventfd={}) disconnected.\n", evs[i].data.fd);
+                            ::close(evs[i].data.fd); // 关闭客户端的fd。
                             break;
                         }
                     }
                 }
             }
-            else if (evs[ii].events & EPOLLOUT) // 有数据需要写，暂时没有代码，以后再说。
+            else if (evs[i].events & EPOLLOUT) // 有数据需要写，暂时没有代码，以后再说。
             {
             }
             else // 其它事件，都视为错误。
             {
-                std::cout << std::format("client(eventfd={}) error.\n", evs[ii].data.fd);
-                ::close(evs[ii].data.fd); // 关闭客户端的fd。
+                std::cout << std::format("client(eventfd={}) error.\n", evs[i].data.fd);
+                ::close(evs[i].data.fd); // 关闭客户端的fd。
             }
         }
     }
