@@ -8,20 +8,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
-    src/base/current_thread.cpp
-    src/net/timer.cpp
-    src/net/inet_address.cpp
-    src/net/poller/defaut_poller.cpp
-    src/net/channel.cpp
-    src/net/poller.cpp
-    src/net/poller/epoll_poller.cpp
-    src/base/thread.cpp
-    src/net/event_loop.cpp
-    src/net/event_loop_thread.cpp
-    src/net/event_loop_thread_pool.cpp
-    src/net/socket.cpp
-    src/net/acceptor.cpp
 )
+
+add_executable(client
+    examples/client.cpp
+)
+
+add_executable(server
+    examples/server.cpp
+)
+
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 
