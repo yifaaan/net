@@ -1,2 +1,3 @@
 add_subdirectory(echo)
 add_subdirectory(file_transfor)
+add_subdirectory(multi_process)

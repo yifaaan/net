@@ -6,15 +6,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-
 add_subdirectory(examples)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
 )
 
-
-
-
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+# 与 examples/echo 的 client 目标区分，避免重名
+add_executable(net_client
+    src/client.cpp
+)
 
