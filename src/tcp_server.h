@@ -8,6 +8,8 @@
 
 namespace net
 {
+    class Acceptor;
+    
     class TcpServer
     {
     public:
@@ -18,6 +20,6 @@ namespace net
         void Start();
     private:
         EventLoop loop_;
-        Socket server_sock_;
+        std::unique_ptr<Acceptor>  acceptor_;
     };
 }
