@@ -13,6 +13,7 @@ add_executable(${PROJECT_NAME}
     src/epoll.cpp
     src/inet_address.cpp
     src/socket.cpp
+    src/channel.cpp
 )
 
 # 与 examples/echo 的 client 目标区分，避免重名
