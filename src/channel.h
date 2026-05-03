@@ -1,6 +1,9 @@
 #pragma once
 
+#include "socket.h"
+
 #include <cstdint>
+#include <functional>
 
 namespace net
 {
@@ -25,11 +28,22 @@ namespace net
         uint32_t events() const;
         uint32_t revents() const;
 
+        // 处理epoll_wait返回的事件
+        void HandleEvent();
+
+        // 处理新连接
+        void NewConnection(Socket& server_sock);
+        // 处理对端发来的消息 
+        void OnMessage();
+
+        // 设置读回调
+        void SetReadCallback(std::function<void()> read_callback);
     private:
         int fd_{ -1 };
         bool in_epoll_{};
         Epoll* ep_{};
         uint32_t events_{};
         uint32_t revents_{};
+        std::function<void()> read_callback_{};
     };
 }
