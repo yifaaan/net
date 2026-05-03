@@ -9,7 +9,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_subdirectory(examples)
 
 add_executable(${PROJECT_NAME}
-    src/main.cpp
+    src/tcpepoll.cpp
+    src/epoll.cpp
+    src/inet_address.cpp
+    src/socket.cpp
 )
 
 # 与 examples/echo 的 client 目标区分，避免重名
