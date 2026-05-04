@@ -18,6 +18,7 @@ namespace net
         void SetTcpNodelay(bool on);
         void SetKeepalive(bool on);
 
+        void SetIpPort(const std::string& ip, uint16_t port);
         const std::string& ip() const;
         uint16_t port() const;
     private:

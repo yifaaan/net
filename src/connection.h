@@ -4,6 +4,8 @@
 #include <functional>
 #include <memory>
 
+#include "buffer.h"
+
 namespace net
 {
 
@@ -28,6 +30,7 @@ namespace net
         // 错误的回调 
         void ErrorCallback();
 
+        void OnMessage();
 
         void SetCloseCallback(std::function<void(Connection*)> cb);
         void SetErrorCallback(std::function<void(Connection*)> cb);
@@ -40,5 +43,8 @@ namespace net
 
         std::function<void(Connection*)> close_callback_; // 将回调TcpServer::CloseConnection();
         std::function<void(Connection*)> error_callback_;
+
+        Buffer input_buffer_;
+        Buffer output_buffer_;
     };
 }

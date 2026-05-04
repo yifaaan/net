@@ -29,8 +29,7 @@ namespace net
             ::close(fd_);
             std::exit(-1);
         }
-        ip_ = server_addr.ip();
-        port_ = server_addr.port();
+        SetIpPort(server_addr.ip(), server_addr.port());
     }
     void Socket::Listen(int n)
     {
@@ -49,8 +48,7 @@ namespace net
 
         client_addr.SetAddr(peer_addr);
         // std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n", clientfd, client_addr.ip(), client_addr.port());
-        ip_  = client_addr.ip();
-        port_ = client_addr.port();
+
         return clientfd;
     }
     void Socket::SetReuseAddr(bool on)
@@ -85,6 +83,11 @@ namespace net
         return listenfd;
     }
 
+    void Socket::SetIpPort(const std::string& ip, uint16_t port)
+    {
+        ip_ = ip;
+        port_ = port;
+    }
     const std::string& Socket::ip() const
     {
         return ip_;

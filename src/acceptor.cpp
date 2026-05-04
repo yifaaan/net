@@ -8,7 +8,6 @@
 #include "channel.h"
 #include "event_loop.h"
 
-
 namespace net
 {
     Acceptor::Acceptor(EventLoop* loop, const std::string& ip, uint16_t port) : loop_{ loop }
@@ -32,7 +31,7 @@ namespace net
     {
         net::InetAddress client_addr{};
         auto client_sock = std::make_unique<Socket>(server_sock_->Accept(client_addr));
-
+        client_sock->SetIpPort(client_addr.ip(), client_addr.port());
         new_connection_callback_(std::move(client_sock));
     }
 
