@@ -27,5 +27,8 @@ namespace net
     {
         return ep_.get();
     }
-
+    void EventLoop::UpdateChannel(Channel *ch)
+    {
+        ep_->UpdateChannel(ch);
+    }
 }

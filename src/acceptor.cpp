@@ -16,7 +16,7 @@ namespace net
         server_sock_->Bind(server_addr);
         server_sock_->Listen();
 
-        auto server_channel = std::make_unique<Channel>(loop_->ep(), server_sock_->fd());
+        auto server_channel = std::make_unique<Channel>(loop_, server_sock_->fd());
         server_channel->EnableReading();
         server_channel->SetReadCallback(std::bind(&Channel::NewConnection, server_channel.get(), *server_sock_));
     }

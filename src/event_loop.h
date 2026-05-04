@@ -5,6 +5,7 @@
 namespace net
 {
     class Epoll;
+    class Channel;
 
     class EventLoop
     {
@@ -16,6 +17,7 @@ namespace net
         void Run();
         
         Epoll* ep() const;
+        void UpdateChannel(Channel *ch);
     private:
         std::unique_ptr<Epoll> ep_;
     };

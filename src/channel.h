@@ -7,12 +7,12 @@
 
 namespace net
 {
-    class Epoll;
+    class EventLoop;
 
     class Channel
     {
     public:
-        Channel(Epoll* ep, int fd);
+        Channel(EventLoop* loop, int fd);
         ~Channel();
 
         int fd() const;
@@ -41,7 +41,7 @@ namespace net
     private:
         int fd_{ -1 };
         bool in_epoll_{};
-        Epoll* ep_{};
+        EventLoop *loop_{};
         uint32_t events_{};
         uint32_t revents_{};
         std::function<void()> read_callback_{};
