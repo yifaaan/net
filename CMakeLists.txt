@@ -10,6 +10,7 @@ add_subdirectory(examples)
 
 add_executable(${PROJECT_NAME}
     src/tcpepoll.cpp
+    src/echo_server.cpp
     src/epoll.cpp
     src/inet_address.cpp
     src/socket.cpp

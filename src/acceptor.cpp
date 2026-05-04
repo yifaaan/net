@@ -10,7 +10,7 @@
 
 namespace net
 {
-    Acceptor::Acceptor(EventLoop* loop, const std::string& ip, uint16_t port) : loop_{ loop }
+    Acceptor::Acceptor(EventLoop* loop, const std::string& ip, uint16_t port) : loop_{ loop }, server_sock_{ std::make_unique<Socket>(CreateNonBlocking()) }
     {
         net::InetAddress server_addr{ ip, port };
         server_sock_->SetReuseAddr(true);
@@ -20,9 +20,9 @@ namespace net
         server_sock_->Bind(server_addr);
         server_sock_->Listen();
 
-        auto server_channel = std::make_unique<Channel>(loop_, server_sock_->fd());
-        server_channel->EnableReading();
-        server_channel->SetReadCallback(std::bind(&Acceptor::NewConnection, this));
+        channel_ = std::make_unique<Channel>(loop_, server_sock_->fd());
+        channel_->EnableReading();
+        channel_->SetReadCallback(std::bind(&Acceptor::NewConnection, this));
     }
 
     Acceptor::~Acceptor() = default;

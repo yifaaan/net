@@ -21,6 +21,22 @@ namespace net
     {
         loop_.SetWaitTimeoutMs(timeout_ms);
     }
+
+    void TcpServer::SetMessageHandler(std::function<void(Connection*, std::string)> cb)
+    {
+        message_handler_ = std::move(cb);
+    }
+
+    void TcpServer::SetSendCompleteHandler(std::function<void(Connection*)> cb)
+    {
+        send_complete_handler_ = std::move(cb);
+    }
+
+    void TcpServer::SetTimeoutHandler(std::function<void(EventLoop*)> cb)
+    {
+        timeout_handler_ = std::move(cb);
+    }
+
     TcpServer::~TcpServer() = default;
 
     void TcpServer::Start()
@@ -53,17 +69,19 @@ namespace net
 
     void TcpServer::OnMessage(Connection* conn, std::string message)
     {
-        std::cout << std::format("recv(eventfd={},ip={},port={}): {}\n", conn->fd(), conn->ip(), conn->port(), message);
-        conn->Send(message.data(), message.size());
+        if (message_handler_)
+            message_handler_(conn, std::move(message));
     }
 
     void TcpServer::OnSendComplete(Connection* conn)
     {
-        std::cout << std::format("send complete(eventfd={},ip={},port={})\n", conn->fd(), conn->ip(), conn->port());
+        if (send_complete_handler_)
+            send_complete_handler_(conn);
     }
 
     void TcpServer::OnTimeout(EventLoop* loop)
     {
-        std::cout << std::format("epoll_wait timeout (loop={})\n", static_cast<void*>(loop));
+        if (timeout_handler_)
+            timeout_handler_(loop);
     }
 }

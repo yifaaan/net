@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "tcp_server.h"
+#include "echo_server.h"
 
 int main(int argc, char* argv[])
 {
@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    net::TcpServer server{ argv[1], static_cast<uint16_t>(std::atoi(argv[2])) };
+    net::EchoServer server{ argv[1], static_cast<uint16_t>(std::atoi(argv[2])) };
 
     server.Start();
 
