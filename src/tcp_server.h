@@ -31,7 +31,7 @@ namespace net
 
         void OnMessage(Connection* conn, std::string message);
         void OnSendComplete(Connection* conn);
-        void OnTimeout();
+        void OnTimeout(EventLoop* loop);
     private:
         EventLoop loop_;
         std::unique_ptr<Acceptor>  acceptor_;

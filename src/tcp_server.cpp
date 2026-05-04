@@ -14,7 +14,7 @@ namespace net
     TcpServer::TcpServer(const std::string& ip, uint16_t port) : acceptor_{ std::make_unique<Acceptor>(&loop_, ip, port) }
     {
         acceptor_->SetNewConnectionCallback(std::bind(&TcpServer::NewConnection, this, std::placeholders::_1));
-        loop_.SetTimeoutCallback([this]() { OnTimeout(); });
+        loop_.SetTimeoutCallback([this](EventLoop* loop) { OnTimeout(loop); });
     }
 
     void TcpServer::SetEpollWaitTimeoutMs(int timeout_ms)
@@ -62,8 +62,8 @@ namespace net
         std::cout << std::format("send complete(eventfd={},ip={},port={})\n", conn->fd(), conn->ip(), conn->port());
     }
 
-    void TcpServer::OnTimeout()
+    void TcpServer::OnTimeout(EventLoop* loop)
     {
-        std::cout << std::format("epoll_wait timeout\n");
+        std::cout << std::format("epoll_wait timeout (loop={})\n", static_cast<void*>(loop));
     }
 }

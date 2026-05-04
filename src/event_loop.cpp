@@ -19,7 +19,7 @@ namespace net
             if (channels.empty())
             {
                 if (wait_timeout_ms_ >= 0 && timeout_callback_)
-                    timeout_callback_();
+                    timeout_callback_(this);
                 continue;
             }
             for (auto ch : channels)
@@ -34,7 +34,7 @@ namespace net
         wait_timeout_ms_ = timeout_ms;
     }
 
-    void EventLoop::SetTimeoutCallback(std::function<void()> cb)
+    void EventLoop::SetTimeoutCallback(std::function<void(EventLoop*)> cb)
     {
         timeout_callback_ = std::move(cb);
     }
