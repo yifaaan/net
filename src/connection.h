@@ -45,6 +45,9 @@ namespace net
         /** 发送一帧负载：自动在前面加上 4 字节大端无符号长度（头部），长度为负载字节数。 */
         void Send(const char* data, size_t size);
 
+        /** 将任务投递到本连接所属的 EventLoop 线程（与其它 Channel 回调同线程）。可在工作线程调用。 */
+        void RunLater(std::function<void()> fn);
+
     private:
         void FlushOutput();
 

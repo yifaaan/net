@@ -192,4 +192,9 @@ namespace net
         output_buffer_.Append(data, size);
         FlushOutput();
     }
+
+    void Connection::RunLater(std::function<void()> fn)
+    {
+        loop_->RunLater(std::move(fn));
+    }
 }

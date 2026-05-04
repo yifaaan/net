@@ -37,10 +37,10 @@ namespace net
         acceptor_->SetNewConnectionCallback(std::bind(&TcpServer::NewConnection, this, std::placeholders::_1));
         loop_->SetTimeoutCallback([this](EventLoop* loop) { OnTimeout(loop); });
 
-        // 每个从循环在独立线程中 Run()（与池大小一一对应，任务内阻塞不归还 worker）。
+        // 每个从循环在独立线程中 Run()。
         for (auto& sub : sub_loops_)
         {
-            EventLoop* const lp = sub.get(); // 按值捕获裸指针，避免引用 sub 的悬垂
+            auto lp = sub.get();
             thread_pool_->AddTask([lp] { lp->Run(); });
         }
     }
