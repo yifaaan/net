@@ -31,8 +31,6 @@ namespace net
         // 处理epoll_wait返回的事件
         void HandleEvent();
 
-        // 处理新连接
-        void NewConnection(Socket& server_sock);
         // 处理对端发来的消息 
         void OnMessage();
 

@@ -1,8 +1,13 @@
 #include "acceptor.h"
 
+#include <format>
+#include <iostream>
+
+#include "connection.h"
 #include "socket.h"
 #include "channel.h"
 #include "event_loop.h"
+
 
 namespace net
 {
@@ -18,8 +23,20 @@ namespace net
 
         auto server_channel = std::make_unique<Channel>(loop_, server_sock_->fd());
         server_channel->EnableReading();
-        server_channel->SetReadCallback(std::bind(&Channel::NewConnection, server_channel.get(), *server_sock_));
+        server_channel->SetReadCallback(std::bind(&Acceptor::NewConnection, this));
     }
 
     Acceptor::~Acceptor() = default;
+    
+    void Acceptor::NewConnection()
+    {
+        net::InetAddress client_addr{};
+        auto client_sock = std::make_unique<Socket>(server_sock_->Accept(client_addr));
+
+        std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n", client_sock->fd(), client_addr.ip(), client_addr.port());
+
+        // 为新客户端连接准备读事件，并添加到epoll中。
+        auto conn = std::make_unique<Connection>(loop_, std::move(client_sock));
+    }
+
 }

@@ -17,6 +17,8 @@ namespace net
         Acceptor(EventLoop* loop, const std::string& ip, uint16_t port);
         ~Acceptor();
 
+        // 处理新连接
+        void NewConnection();
     private:
         // 一个Acceptor对应一个loop
         EventLoop* loop_;

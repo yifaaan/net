@@ -84,17 +84,6 @@ namespace net
         }
     }
 
-    // 处理新连接
-    void Channel::NewConnection(Socket& server_sock)
-    {
-        net::InetAddress client_addr{};
-        auto client_sock = std::make_unique<Socket>(server_sock.Accept(client_addr));
-
-        std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n", client_sock->fd(), client_addr.ip(), client_addr.port());
-
-        // 为新客户端连接准备读事件，并添加到epoll中。
-        auto conn = std::make_unique<Connection>(loop_, std::move(client_sock));
-    }
     // 处理对端发来的消息
     void Channel::OnMessage()
     {
