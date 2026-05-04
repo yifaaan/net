@@ -31,7 +31,7 @@ namespace net
         loop_{ std::make_unique<EventLoop>() },
         num_sub_threads_{ num_sub_threads > 0 ? num_sub_threads : 1 },
         sub_loops_{ MakeSubLoops(num_sub_threads_) },
-        thread_pool_{ std::make_unique<ThreadPool>(static_cast<size_t>(num_sub_threads_)) },
+        thread_pool_{ std::make_unique<ThreadPool>(ThreadPoolKind::Io, static_cast<size_t>(num_sub_threads_)) },
         acceptor_{ std::make_unique<Acceptor>(loop_.get(), ip, port) }
     {
         acceptor_->SetNewConnectionCallback(std::bind(&TcpServer::NewConnection, this, std::placeholders::_1));

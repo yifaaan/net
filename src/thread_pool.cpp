@@ -4,7 +4,7 @@
 
 namespace net
 {
-    ThreadPool::ThreadPool(size_t num_threads)
+    ThreadPool::ThreadPool(ThreadPoolKind kind, size_t num_threads) : kind_{ kind }
     {
         threads_.reserve(num_threads);
         for (size_t i = 0; i < num_threads; ++i)

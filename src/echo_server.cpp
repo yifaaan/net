@@ -10,7 +10,8 @@ namespace net
     EchoServer::EchoServer(const std::string& ip, uint16_t port, int num_sub_threads, size_t num_worker_threads)
         : server_(ip, port, num_sub_threads),
           num_sub_threads_(num_sub_threads),
-          thread_pool_(num_worker_threads > 0 ? std::make_unique<ThreadPool>(num_worker_threads) : nullptr)
+          thread_pool_(num_worker_threads > 0 ? std::make_unique<ThreadPool>(ThreadPoolKind::Worker, num_worker_threads)
+                                              : nullptr)
     {
         server_.SetMessageHandler([this](Connection* c, std::string h, std::string p) { OnMessage(c, std::move(h), std::move(p)); });
         server_.SetSendCompleteHandler([this](Connection* c) { OnSendComplete(c); });
