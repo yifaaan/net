@@ -9,7 +9,7 @@
 namespace net
 {
     class Acceptor;
-    
+
     class TcpServer
     {
     public:
@@ -18,6 +18,8 @@ namespace net
 
         // 运行事件循环
         void Start();
+
+        void NewConnection(std::unique_ptr<Socket> client_sock);
     private:
         EventLoop loop_;
         std::unique_ptr<Acceptor>  acceptor_;

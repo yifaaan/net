@@ -27,16 +27,18 @@ namespace net
     }
 
     Acceptor::~Acceptor() = default;
-    
+
     void Acceptor::NewConnection()
     {
         net::InetAddress client_addr{};
         auto client_sock = std::make_unique<Socket>(server_sock_->Accept(client_addr));
 
         std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n", client_sock->fd(), client_addr.ip(), client_addr.port());
-
-        // 为新客户端连接准备读事件，并添加到epoll中。
-        auto conn = std::make_unique<Connection>(loop_, std::move(client_sock));
+        new_connection_callback_(std::move(client_sock));
     }
 
+    void Acceptor::SetNewConnectionCallback(std::function<void(std::unique_ptr<Socket>)> cb)
+    {
+        new_connection_callback_ = std::move(cb);
+    }
 }
