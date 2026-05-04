@@ -31,11 +31,15 @@ namespace net
         void ErrorCallback();
 
         void WriteCallback();
+
+        /** epoll 可读时由 Channel 调用：把内核缓冲区数据读入 input_buffer_，读到 EAGAIN 后解析帧。 */
         void OnMessage();
+
+        using MessageCallback = void(Connection*, std::string, std::string);
 
         void SetCloseCallback(std::function<void(Connection*)> cb);
         void SetErrorCallback(std::function<void(Connection*)> cb);
-        void SetMessageCallback(std::function<void(Connection*, std::string, std::string)> cb);
+        void SetMessageCallback(std::function<MessageCallback> cb);
         void SetWriteCompleteCallback(std::function<void(Connection*)> cb);
 
         /** 发送一帧负载：自动在前面加上 4 字节大端无符号长度（头部），长度为负载字节数。 */
@@ -43,6 +47,8 @@ namespace net
 
     private:
         void FlushOutput();
+
+        /** 从 input_buffer_ 按「4 字节大端长度 + 负载」拆出完整帧，每帧触发 message_callback_。 */
         void DispatchFrames();
 
         EventLoop* loop_;
@@ -52,7 +58,7 @@ namespace net
 
         std::function<void(Connection*)> close_callback_; // 将回调TcpServer::CloseConnection();
         std::function<void(Connection*)> error_callback_;
-        std::function<void(Connection*, std::string, std::string)> message_callback_;
+        std::function<MessageCallback> message_callback_;
         std::function<void(Connection*)> write_complete_callback_;
 
         Buffer input_buffer_;

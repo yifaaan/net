@@ -50,27 +50,4 @@ namespace net
         }
         buf_.erase(0, n);
     }
-
-    bool Buffer::TryRetrieveFrame(
-        size_t header_size,
-        const std::function<size_t(std::string_view header)>& payload_length,
-        std::string& header,
-        std::string& payload)
-    {
-        if (buf_.size() < header_size)
-        {
-            return false;
-        }
-        const std::string_view hv(buf_.data(), header_size);
-        const size_t plen = payload_length(hv);
-        const size_t remaining = buf_.size() - header_size;
-        if (plen > remaining)
-        {
-            return false;
-        }
-        header.assign(buf_.data(), header_size);
-        payload.assign(buf_.data() + header_size, plen);
-        Retrieve(header_size + plen);
-        return true;
-    }
 }

@@ -12,6 +12,7 @@
 
 namespace
 {
+    // 应用层帧：前 4 字节为负载长度（大端 uint32），后跟 payload；与 Connection::Send 编码一致。
     constexpr size_t kFrameHeaderSize = 4;
     constexpr size_t kMaxPayloadBytes = 16 * 1024 * 1024;
 
@@ -103,6 +104,7 @@ namespace net
     {
         std::string header;
         std::string payload;
+        // 可能一次回调里连续凑齐多帧，故用 while 尽量排空 input_buffer_ 中已完整的帧。
         while (input_buffer_.size() >= kFrameHeaderSize)
         {
             const std::string_view prefix = input_buffer_.PeekPrefix(kFrameHeaderSize);
@@ -114,6 +116,7 @@ namespace net
                 return;
             }
             const size_t plen = static_cast<size_t>(len_u);
+            // 半包时 TryRetrieveFrame 失败，保留缓冲等下次 OnMessage 再读。
             if (!input_buffer_.TryRetrieveFrame(
                     kFrameHeaderSize,
                     [plen](std::string_view) { return plen; },
@@ -126,7 +129,7 @@ namespace net
         }
     }
 
-    // 处理对端发来的消息
+    // ET 模式：须在一次可读事件里循环 read，直到 EAGAIN，避免漏读。
     void Connection::OnMessage()
     {
         std::array<char, 4096> buffer{};
@@ -142,11 +145,13 @@ namespace net
             {
                 continue;
             }
+            // 当前 fd 可读数据已读完：解析已累积字节中的完整帧。
             if (nread == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
             {
                 DispatchFrames();
                 break;
             }
+            // 对端正常关闭连接。
             if (nread == 0)
             {
                 CloseCallback();
@@ -165,7 +170,7 @@ namespace net
     {
         error_callback_ = std::move(cb);
     }
-    void Connection::SetMessageCallback(std::function<void(Connection*, std::string, std::string)> cb)
+    void Connection::SetMessageCallback(std::function<MessageCallback> cb)
     {
         message_callback_ = std::move(cb);
     }
