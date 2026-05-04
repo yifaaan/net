@@ -16,7 +16,7 @@ BraceWrapping:
 BreakBeforeTernaryOperators: false
 BreakConstructorInitializers: AfterColon
 BreakInheritanceList: AfterColon
-ColumnLimit: 0
+ColumnLimit: 120
 CommentPragmas: "suppress"
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 Cpp11BracedListStyle: false

@@ -13,7 +13,7 @@ namespace net
     class EchoServer
     {
     public:
-        EchoServer(const std::string& ip, uint16_t port);
+        EchoServer(const std::string& ip, uint16_t port, int num_sub_threads = 0);
 
         void Start();
         void SetEpollWaitTimeoutMs(int timeout_ms);
@@ -24,5 +24,6 @@ namespace net
         void OnTimeout(EventLoop* loop);
 
         TcpServer server_;
+        int num_sub_threads_;
     };
 }

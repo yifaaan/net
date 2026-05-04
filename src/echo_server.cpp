@@ -7,7 +7,8 @@
 
 namespace net
 {
-    EchoServer::EchoServer(const std::string& ip, uint16_t port) : server_(ip, port)
+    EchoServer::EchoServer(const std::string& ip, uint16_t port, int num_sub_threads)
+        : server_(ip, port, num_sub_threads), num_sub_threads_(num_sub_threads)
     {
         server_.SetMessageHandler([this](Connection* c, std::string h, std::string p) { OnMessage(c, std::move(h), std::move(p)); });
         server_.SetSendCompleteHandler([this](Connection* c) { OnSendComplete(c); });

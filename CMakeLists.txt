@@ -17,6 +17,7 @@ add_executable(${PROJECT_NAME}
     src/channel.cpp
     src/event_loop.cpp
     src/tcp_server.cpp
+    src/thread_pool.cpp
     src/acceptor.cpp
     src/connection.cpp
     src/buffer.cpp
