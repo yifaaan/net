@@ -1,8 +1,5 @@
 #include "echo_server.h"
 
-#include <format>
-#include <iostream>
-
 #include "connection.h"
 
 namespace net
@@ -32,19 +29,12 @@ namespace net
 
     void EchoServer::OnMessage(std::shared_ptr<Connection> conn, std::string header, std::string payload)
     {
+        (void)header;
         if (thread_pool_)
         {
             thread_pool_->AddTask(
-                [conn, header = std::move(header), payload = std::move(payload)]() mutable
+                [conn, payload = std::move(payload)]() mutable
                 {
-                    std::cout << std::format(
-                        "recv(eventfd={},ip={},port={}): header={} bytes payload={} bytes [{}]\n",
-                        conn->fd(),
-                        conn->ip(),
-                        conn->port(),
-                        header.size(),
-                        payload.size(),
-                        payload);
                     conn->RunLater(
                         [conn, payload = std::move(payload)]() mutable
                         {
@@ -54,24 +44,16 @@ namespace net
             return;
         }
 
-        std::cout << std::format(
-            "recv(eventfd={},ip={},port={}): header={} bytes payload={} bytes [{}]\n",
-            conn->fd(),
-            conn->ip(),
-            conn->port(),
-            header.size(),
-            payload.size(),
-            payload);
         conn->Send(payload.data(), payload.size());
     }
 
     void EchoServer::OnSendComplete(std::shared_ptr<Connection> conn)
     {
-        std::cout << std::format("send complete(eventfd={},ip={},port={})\n", conn->fd(), conn->ip(), conn->port());
+        (void)conn;
     }
 
     void EchoServer::OnTimeout(EventLoop* loop)
     {
-        std::cout << std::format("epoll_wait timeout (loop={})\n", static_cast<void*>(loop));
+        (void)loop;
     }
 }

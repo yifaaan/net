@@ -29,14 +29,36 @@ namespace net
 
     void Acceptor::NewConnection()
     {
+        if (!server_sock_)
+        {
+            return;
+        }
         net::InetAddress client_addr{};
-        auto client_sock = std::make_unique<Socket>(server_sock_->Accept(client_addr));
+        const int client_fd = server_sock_->Accept(client_addr);
+        if (client_fd < 0)
+        {
+            return;
+        }
+        auto client_sock = std::make_unique<Socket>(client_fd);
         client_sock->SetIpPort(client_addr.ip(), client_addr.port());
-        new_connection_callback_(std::move(client_sock));
+        if (new_connection_callback_)
+        {
+            new_connection_callback_(std::move(client_sock));
+        }
     }
 
     void Acceptor::SetNewConnectionCallback(std::function<void(std::unique_ptr<Socket>)> cb)
     {
         new_connection_callback_ = std::move(cb);
+    }
+
+    void Acceptor::Stop()
+    {
+        if (channel_)
+        {
+            channel_->RemoveChannel();
+            channel_.reset();
+        }
+        server_sock_.reset();
     }
 }

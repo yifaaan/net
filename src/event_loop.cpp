@@ -41,7 +41,8 @@ namespace net
     // 运行事件循环
     void EventLoop::Run()
     {
-        while (true)
+        quit_.store(false, std::memory_order_release);
+        while (!quit_.load(std::memory_order_acquire))
         {
             auto channels = ep_->Wait(wait_timeout_ms_);
             if (channels.empty())
@@ -57,6 +58,12 @@ namespace net
         }
     }
 
+    void EventLoop::Stop()
+    {
+        quit_.store(true, std::memory_order_release);
+        WakeupWrite();
+    }
+
     void EventLoop::SetWaitTimeoutMs(int timeout_ms)
     {
         wait_timeout_ms_ = timeout_ms;
@@ -65,6 +72,11 @@ namespace net
     void EventLoop::SetTimeoutCallback(std::function<void(EventLoop*)> cb)
     {
         timeout_callback_ = std::move(cb);
+    }
+
+    void EventLoop::Wakeup()
+    {
+        WakeupWrite();
     }
 
     Epoll* EventLoop::ep() const
@@ -123,10 +135,28 @@ namespace net
             std::lock_guard lock(pending_mutex_);
             pending_functors_.push_back(std::move(fn));
         }
+        WakeupWrite();
+    }
+
+    void EventLoop::WakeupWrite()
+    {
         constexpr uint64_t one = 1;
-        const ssize_t nw = ::write(wakeup_fd_, &one, sizeof one);
-        if (nw != static_cast<ssize_t>(sizeof one))
+        while (true)
         {
+            const ssize_t nw = ::write(wakeup_fd_, &one, sizeof one);
+            if (nw == static_cast<ssize_t>(sizeof one))
+            {
+                return;
+            }
+            if (nw == -1 && errno == EINTR)
+            {
+                continue;
+            }
+            if (nw == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+            {
+                // eventfd 计数已非零，loop 会被唤醒；此时无需再次写入。
+                return;
+            }
             ::perror("eventfd write");
             std::exit(-1);
         }

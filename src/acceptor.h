@@ -20,6 +20,8 @@ namespace net
 
         // 处理新连接
         void NewConnection();
+        // 停止监听并释放监听资源。
+        void Stop();
 
         void SetNewConnectionCallback(std::function<void(std::unique_ptr<Socket>)> cb);
     private:

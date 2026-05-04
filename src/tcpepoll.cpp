@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 
 #include "echo_server.h"
 
@@ -11,7 +12,9 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    net::EchoServer server{ argv[1], static_cast<uint16_t>(std::atoi(argv[2])) };
+    const unsigned int hc = std::thread::hardware_concurrency();
+    const int sub_threads = hc > 1 ? static_cast<int>(hc - 1) : 1;
+    net::EchoServer server{ argv[1], static_cast<uint16_t>(std::atoi(argv[2])), sub_threads };
 
     server.Start();
 
