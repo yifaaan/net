@@ -19,7 +19,7 @@ namespace net
         void SetEpollWaitTimeoutMs(int timeout_ms);
 
     private:
-        void OnMessage(Connection* conn, std::string message);
+        void OnMessage(Connection* conn, std::string header, std::string payload);
         void OnSendComplete(Connection* conn);
         void OnTimeout(EventLoop* loop);
 

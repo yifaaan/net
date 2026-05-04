@@ -1,4 +1,4 @@
-// 网络通讯的客户端程序。
+// 网络通讯的客户端程序（与服务端一致：4 字节大端无符号长度 + 负载）。
 #include <arpa/inet.h>
 #include <array>
 #include <cstdint>
@@ -11,6 +11,95 @@
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
+
+namespace
+{
+    constexpr size_t kMaxPayloadBytes = 16 * 1024 * 1024;
+
+    void EncodeBe32(uint32_t v, unsigned char* p)
+    {
+        p[0] = static_cast<unsigned char>((v >> 24) & 0xff);
+        p[1] = static_cast<unsigned char>((v >> 16) & 0xff);
+        p[2] = static_cast<unsigned char>((v >> 8) & 0xff);
+        p[3] = static_cast<unsigned char>(v & 0xff);
+    }
+
+    uint32_t DecodeBe32(const unsigned char* p)
+    {
+        return (uint32_t{p[0]} << 24) | (uint32_t{p[1]} << 16) | (uint32_t{p[2]} << 8) | uint32_t{p[3]};
+    }
+
+    bool WriteAll(int fd, const void* buf, size_t len)
+    {
+        const auto* p = static_cast<const char*>(buf);
+        size_t off = 0;
+        while (off < len)
+        {
+            const ssize_t n = ::send(fd, p + off, len - off, 0);
+            if (n <= 0)
+            {
+                return false;
+            }
+            off += static_cast<size_t>(n);
+        }
+        return true;
+    }
+
+    bool ReadAll(int fd, void* buf, size_t len)
+    {
+        auto* p = static_cast<char*>(buf);
+        size_t off = 0;
+        while (off < len)
+        {
+            const ssize_t n = ::recv(fd, p + off, len - off, 0);
+            if (n <= 0)
+            {
+                return false;
+            }
+            off += static_cast<size_t>(n);
+        }
+        return true;
+    }
+
+    bool SendFrame(int fd, const char* payload, size_t payload_len)
+    {
+        if (payload_len > kMaxPayloadBytes)
+        {
+            return false;
+        }
+        unsigned char hdr[4];
+        EncodeBe32(static_cast<uint32_t>(payload_len), hdr);
+        if (!WriteAll(fd, hdr, 4))
+        {
+            return false;
+        }
+        if (payload_len == 0)
+        {
+            return true;
+        }
+        return WriteAll(fd, payload, payload_len);
+    }
+
+    bool RecvFrame(int fd, std::string& payload)
+    {
+        unsigned char hdr[4];
+        if (!ReadAll(fd, hdr, 4))
+        {
+            return false;
+        }
+        const uint32_t len_u = DecodeBe32(hdr);
+        if (len_u > kMaxPayloadBytes)
+        {
+            return false;
+        }
+        payload.assign(static_cast<size_t>(len_u), '\0');
+        if (len_u == 0)
+        {
+            return true;
+        }
+        return ReadAll(fd, payload.data(), static_cast<size_t>(len_u));
+    }
+} // namespace
 
 int main(int argc, char* argv[])
 {
@@ -77,22 +166,22 @@ int main(int argc, char* argv[])
         }
 
         const auto len = std::strlen(buf.data());
-        if (::send(sockfd, buf.data(), len, 0) <= 0)
+        if (!SendFrame(sockfd, buf.data(), len))
         {
             std::cout << std::format("write() failed.\n");
             ::close(sockfd);
             return -1;
         }
 
-        buf.fill('\0');
-        if (::recv(sockfd, buf.data(), buf.size(), 0) <= 0)
+        std::string reply;
+        if (!RecvFrame(sockfd, reply))
         {
             std::cout << std::format("read() failed.\n");
             ::close(sockfd);
             return -1;
         }
 
-        std::cout << std::format("recv:{}\n", buf.data());
+        std::cout << std::format("recv:{}\n", reply);
     }
 
     ::close(sockfd);

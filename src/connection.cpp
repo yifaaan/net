@@ -3,9 +3,33 @@
 #include "event_loop.h"
 #include "socket.h"
 #include "channel.h"
+#include <array>
 #include <cerrno>
+#include <cstdint>
+#include <string_view>
 #include <sys/socket.h>
 #include <unistd.h>
+
+namespace
+{
+    constexpr size_t kFrameHeaderSize = 4;
+    constexpr size_t kMaxPayloadBytes = 16 * 1024 * 1024;
+
+    uint32_t DecodeBe32(std::string_view s)
+    {
+        const auto* p = reinterpret_cast<const unsigned char*>(s.data());
+        return (uint32_t{p[0]} << 24) | (uint32_t{p[1]} << 16) | (uint32_t{p[2]} << 8) | uint32_t{p[3]};
+    }
+
+    void EncodeBe32(uint32_t v, char out[4])
+    {
+        auto* p = reinterpret_cast<unsigned char*>(out);
+        p[0] = static_cast<unsigned char>((v >> 24) & 0xff);
+        p[1] = static_cast<unsigned char>((v >> 16) & 0xff);
+        p[2] = static_cast<unsigned char>((v >> 8) & 0xff);
+        p[3] = static_cast<unsigned char>(v & 0xff);
+    }
+} // namespace
 
 namespace net
 {
@@ -14,7 +38,7 @@ namespace net
         // 为新客户端连接准备读事件，并添加到epoll中。
         channel_->UseET();
         channel_->EnableReading();
-        channel_->SetReadCallback(std::bind(&Connection::OnMessage, this));
+        channel_->SetOnMessageCallback(std::bind(&Connection::OnMessage, this));
         channel_->SetCloseCallback(std::bind(&Connection::CloseCallback, this));
         channel_->SetErrorCallback(std::bind(&Connection::ErrorCallback, this));
         channel_->SetWriteCallback(std::bind(&Connection::WriteCallback, this));
@@ -75,33 +99,61 @@ namespace net
         write_complete_callback_(this);
     }
 
+    void Connection::DispatchFrames()
+    {
+        std::string header;
+        std::string payload;
+        while (input_buffer_.size() >= kFrameHeaderSize)
+        {
+            const std::string_view prefix = input_buffer_.PeekPrefix(kFrameHeaderSize);
+            const uint32_t len_u = DecodeBe32(prefix);
+            if (len_u > kMaxPayloadBytes)
+            {
+                input_buffer_.Clear();
+                ErrorCallback();
+                return;
+            }
+            const size_t plen = static_cast<size_t>(len_u);
+            if (!input_buffer_.TryRetrieveFrame(
+                    kFrameHeaderSize,
+                    [plen](std::string_view) { return plen; },
+                    header,
+                    payload))
+            {
+                return;
+            }
+            message_callback_(this, std::move(header), std::move(payload));
+        }
+    }
+
     // 处理对端发来的消息
     void Connection::OnMessage()
     {
-        std::array<char, 1024> buffer;
-        while (true) // 由于使用非阻塞IO，一次读取buffer大小数据，直到全部的数据读取完毕。
+        std::array<char, 4096> buffer{};
+        while (true)
         {
-            buffer.fill('0');
             ssize_t nread = ::read(fd(), buffer.data(), buffer.size());
-            if (nread > 0) // 成功的读取到了数据。
+            if (nread > 0)
             {
                 input_buffer_.Append(buffer.data(), static_cast<size_t>(nread));
+                continue;
             }
-            else if (nread == -1 && errno == EINTR) // 读取数据的时候被信号中断，继续读取。
+            if (nread == -1 && errno == EINTR)
             {
                 continue;
             }
-            else if (nread == -1 && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) // 全部的数据已读取完毕。
+            if (nread == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
             {
-                message_callback_(this, std::string(input_buffer_.data(), input_buffer_.size()));
-                input_buffer_.Clear();
+                DispatchFrames();
                 break;
             }
-            else if (nread == 0) // 客户端连接已断开。
+            if (nread == 0)
             {
-                close_callback_(this);
+                CloseCallback();
                 break;
             }
+            ErrorCallback();
+            break;
         }
     }
 
@@ -113,7 +165,7 @@ namespace net
     {
         error_callback_ = std::move(cb);
     }
-    void Connection::SetMessageCallback(std::function<void(Connection*, std::string)> cb)
+    void Connection::SetMessageCallback(std::function<void(Connection*, std::string, std::string)> cb)
     {
         message_callback_ = std::move(cb);
     }
@@ -124,6 +176,14 @@ namespace net
 
     void Connection::Send(const char* data, size_t size)
     {
+        if (size > kMaxPayloadBytes)
+        {
+            ErrorCallback();
+            return;
+        }
+        char hdr[kFrameHeaderSize];
+        EncodeBe32(static_cast<uint32_t>(size), hdr);
+        output_buffer_.Append(hdr, kFrameHeaderSize);
         output_buffer_.Append(data, size);
         FlushOutput();
     }

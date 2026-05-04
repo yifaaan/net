@@ -1,15 +1,9 @@
 #include "channel.h"
 
-#include <format>
-#include <iostream>
-#include <memory>
 #include <sys/epoll.h>
 #include <unistd.h>
 
-#include "connection.h"
 #include "epoll.h"
-#include "inet_address.h"
-#include "socket.h"
 #include "event_loop.h"
 
 namespace net
@@ -78,16 +72,10 @@ namespace net
         } //  普通数据  带外数据
         else if (revents_ & (EPOLLIN | EPOLLPRI)) // 接收缓冲区中有数据可以读。
         {
-            // if (is_listen_fd_) // 如果是listenfd有事件，表示有新的客户端连上来。
-            // {
-            //     NewConnection(server_sock);
-            // }
-            // else // 如果是客户端连接的fd有事件。
-            // {
-            //     OnMessage();
-            // }
-
-            read_callback_(); // 使用回调处理读事件
+            if (on_message_callback_)
+                on_message_callback_();
+            else
+                read_callback_();
         }
         else if (revents_ & EPOLLOUT) // 有数据需要写
         {
@@ -99,40 +87,14 @@ namespace net
         }
     }
 
-    // 处理对端发来的消息
-    void Channel::OnMessage()
-    {
-        std::array<char, 1024> buffer;
-        while (true) // 由于使用非阻塞IO，一次读取buffer大小数据，直到全部的数据读取完毕。
-        {
-            buffer.fill('0');
-            ssize_t nread = ::read(fd_, buffer.data(), buffer.size());
-            if (nread > 0) // 成功的读取到了数据。
-            {
-                // 把接收到的报文内容原封不动的发回去。
-                std::cout << std::format("recv(eventfd={}):{}\n", fd_, std::string_view(buffer.data(), static_cast<size_t>(nread)));
-                ::send(fd_, buffer.data(), nread, 0);
-            }
-            else if (nread == -1 && errno == EINTR) // 读取数据的时候被信号中断，继续读取。
-            {
-                continue;
-            }
-            else if (nread == -1 && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) // 全部的数据已读取完毕。
-            {
-                break;
-            }
-            else if (nread == 0) // 客户端连接已断开。
-            {
-                std::cout << std::format("client(eventfd={}) disconnected.\n", fd_);
-                ::close(fd_); // 关闭客户端的fd。
-                break;
-            }
-        }
-    }
-
     void Channel::SetReadCallback(std::function<void()> cb)
     {
         read_callback_ = std::move(cb);
+    }
+
+    void Channel::SetOnMessageCallback(std::function<void()> cb)
+    {
+        on_message_callback_ = std::move(cb);
     }
 
     void Channel::SetCloseCallback(std::function<void()> cb)

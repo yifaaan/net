@@ -25,7 +25,7 @@ namespace net
         // epoll_wait 超时（毫秒）。须 >= 0 才会在每次超时时调用 OnTimeout；-1 表示永久阻塞（默认）。
         void SetEpollWaitTimeoutMs(int timeout_ms);
 
-        void SetMessageHandler(std::function<void(Connection*, std::string)> cb);
+        void SetMessageHandler(std::function<void(Connection*, std::string, std::string)> cb);
         void SetSendCompleteHandler(std::function<void(Connection*)> cb);
         void SetTimeoutHandler(std::function<void(EventLoop*)> cb);
 
@@ -34,7 +34,7 @@ namespace net
         void CloseConnection(Connection* conn); // 在Connection中回调
         void ErrorConnection(Connection* conn); // 在Connection中回调
 
-        void OnMessage(Connection* conn, std::string message);
+        void OnMessage(Connection* conn, std::string header, std::string payload);
         void OnSendComplete(Connection* conn);
         void OnTimeout(EventLoop* loop);
     private:
@@ -43,7 +43,7 @@ namespace net
 
         std::unordered_map<int, std::unique_ptr<Connection>> conns_;
 
-        std::function<void(Connection*, std::string)> message_handler_;
+        std::function<void(Connection*, std::string, std::string)> message_handler_;
         std::function<void(Connection*)> send_complete_handler_;
         std::function<void(EventLoop*)> timeout_handler_;
     };

@@ -22,7 +22,7 @@ namespace net
         loop_.SetWaitTimeoutMs(timeout_ms);
     }
 
-    void TcpServer::SetMessageHandler(std::function<void(Connection*, std::string)> cb)
+    void TcpServer::SetMessageHandler(std::function<void(Connection*, std::string, std::string)> cb)
     {
         message_handler_ = std::move(cb);
     }
@@ -49,7 +49,7 @@ namespace net
         auto conn = std::make_unique<Connection>(&loop_, std::move(client_sock));
         conn->SetCloseCallback(std::bind(&TcpServer::CloseConnection, this, std::placeholders::_1));
         conn->SetErrorCallback(std::bind(&TcpServer::ErrorConnection, this, std::placeholders::_1));
-        conn->SetMessageCallback(std::bind(&TcpServer::OnMessage, this, std::placeholders::_1, std::placeholders::_2));
+        conn->SetMessageCallback(std::bind(&TcpServer::OnMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
         conn->SetWriteCompleteCallback(std::bind(&TcpServer::OnSendComplete, this, std::placeholders::_1));
         std::cout << std::format("new connection(fd={},ip={},port={}) ok.\n", conn->fd(), conn->ip(), conn->port());
 
@@ -67,9 +67,9 @@ namespace net
         conns_.erase(conn->fd());
     }
 
-    void TcpServer::OnMessage(Connection* conn, std::string message)
+    void TcpServer::OnMessage(Connection* conn, std::string header, std::string payload)
     {
-        message_handler_(conn, std::move(message));
+        message_handler_(conn, std::move(header), std::move(payload));
     }
 
     void TcpServer::OnSendComplete(Connection* conn)

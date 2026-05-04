@@ -1,7 +1,5 @@
 #pragma once
 
-#include "socket.h"
-
 #include <cstdint>
 #include <functional>
 
@@ -35,11 +33,9 @@ namespace net
         // 处理epoll_wait返回的事件
         void HandleEvent();
 
-        // 处理对端发来的消息 
-        void OnMessage();
-
-        // 设置读回调
+        // 监听 fd：SetReadCallback（如新连接）。业务 fd：SetOnMessageCallback（可读数据）。
         void SetReadCallback(std::function<void()> cb);
+        void SetOnMessageCallback(std::function<void()> cb);
 
         void SetCloseCallback(std::function<void()> cb);
         void SetErrorCallback(std::function<void()> cb);
@@ -50,7 +46,8 @@ namespace net
         EventLoop *loop_{};
         uint32_t events_{};
         uint32_t revents_{};
-        std::function<void()> read_callback_{}; // fd读事件的回调：acceptor->Acceptor::NewConnection();
+        std::function<void()> read_callback_{}; // listen fd 读事件，如 Acceptor::NewConnection
+        std::function<void()> on_message_callback_{}; // 已连接 fd 可读：Connection::OnMessage
         std::function<void()> close_callback_{}; // Connection::CloseCallback();
         std::function<void()> error_callback_{}; // Connection::ErrorCallback();
         std::function<void()> write_callback_{};
