@@ -33,7 +33,6 @@ namespace net
         net::InetAddress client_addr{};
         auto client_sock = std::make_unique<Socket>(server_sock_->Accept(client_addr));
 
-        std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n", client_sock->fd(), client_addr.ip(), client_addr.port());
         new_connection_callback_(std::move(client_sock));
     }
 

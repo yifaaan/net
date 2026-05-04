@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <unordered_map>
 
 #include "event_loop.h"
 #include "socket.h"
@@ -9,6 +10,7 @@
 namespace net
 {
     class Acceptor;
+    class Connection;
 
     class TcpServer
     {
@@ -23,5 +25,7 @@ namespace net
     private:
         EventLoop loop_;
         std::unique_ptr<Acceptor>  acceptor_;
+
+        std::unordered_map<int, std::unique_ptr<Connection>> conns_;
     };
 }

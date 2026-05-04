@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 
 namespace net
@@ -16,6 +17,9 @@ namespace net
         Connection(EventLoop* loop, std::unique_ptr<Socket> client_sock);
         ~Connection();
 
+        int fd() const;
+        uint16_t port() const;
+        const std::string& ip() const;
     private:
         // 一个Acceptor对应一个loop
         EventLoop* loop_;

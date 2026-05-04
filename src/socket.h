@@ -18,9 +18,12 @@ namespace net
         void SetTcpNodelay(bool on);
         void SetKeepalive(bool on);
 
+        const std::string& ip() const;
+        uint16_t port() const;
     private:
         const int fd_;
-
+        std::string ip_; // listen fd时 放服务端 ip
+        uint16_t port_;
     };
 
     int CreateNonBlocking();

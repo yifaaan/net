@@ -16,4 +16,17 @@ namespace net
         channel_->SetReadCallback(std::bind(&Channel::OnMessage, channel_.get()));
     }
     Connection::~Connection() = default;
+
+    int Connection::fd() const
+    {
+        return client_sock_->fd();
+    }
+    uint16_t Connection::port() const
+    {
+        return client_sock_->port();
+    }
+    const std::string& Connection::ip() const
+    {
+        return client_sock_->ip();
+    }
 }
