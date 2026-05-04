@@ -15,12 +15,28 @@ namespace net
     {
         while (true)
         {
-            auto channels = ep_->Wait();
+            auto channels = ep_->Wait(wait_timeout_ms_);
+            if (channels.empty())
+            {
+                if (wait_timeout_ms_ >= 0 && timeout_callback_)
+                    timeout_callback_();
+                continue;
+            }
             for (auto ch : channels)
             {
                 ch->HandleEvent();
             }
         }
+    }
+
+    void EventLoop::SetWaitTimeoutMs(int timeout_ms)
+    {
+        wait_timeout_ms_ = timeout_ms;
+    }
+
+    void EventLoop::SetTimeoutCallback(std::function<void()> cb)
+    {
+        timeout_callback_ = std::move(cb);
     }
 
     Epoll* EventLoop::ep() const

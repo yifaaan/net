@@ -12,6 +12,7 @@ namespace net
 
         void Append(const char* data, size_t size);
         void Clear();
+        void Erase(size_t pos, size_t n);
         size_t size() const;
         const char* data() const;
 

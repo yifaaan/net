@@ -2,7 +2,6 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
 #include <sys/epoll.h>
 #include <unistd.h>
 
@@ -95,10 +94,7 @@ namespace net
             std::exit(-1);
         }
         if (infds == 0)
-        {
-            std::cout << "epoll_wait() timeout\n";
             return channels;
-        }
 
         channels.reserve(infds);
         for (int i = 0; i < infds; i++)

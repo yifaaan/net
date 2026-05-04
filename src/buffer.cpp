@@ -13,6 +13,11 @@ namespace net
     {
         buf_.clear();
     }
+
+    void Buffer::Erase(size_t pos, size_t n)
+    {
+        buf_.erase(pos, n);
+    }
     size_t Buffer::size() const
     {
         return buf_.size();

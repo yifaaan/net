@@ -32,6 +32,22 @@ namespace net
         events_ |= EPOLLIN;
         loop_->UpdateChannel(this);
     }
+    void Channel::DisableReading()
+    {
+        events_ &= ~EPOLLIN;
+        loop_->UpdateChannel(this);
+    }
+
+    void Channel::EnableWriting()
+    {
+        events_ |= EPOLLOUT;
+        loop_->UpdateChannel(this);
+    }
+    void Channel::DisableWriting()
+    {
+        events_ &= ~EPOLLOUT;
+        loop_->UpdateChannel(this);
+    }
     void Channel::SetInEpoll()
     {
         in_epoll_ = true;
@@ -73,8 +89,9 @@ namespace net
 
             read_callback_(); // 使用回调处理读事件
         }
-        else if (revents_ & EPOLLOUT) // 有数据需要写，暂时没有代码，以后再说。
+        else if (revents_ & EPOLLOUT) // 有数据需要写
         {
+            write_callback_();
         }
         else // 其它事件，都视为错误。
         {
@@ -126,5 +143,8 @@ namespace net
     {
         error_callback_ = std::move(cb);
     }
-
+    void Channel::SetWriteCallback(std::function<void()> cb)
+    {
+        write_callback_ = std::move(cb);
+    }
 }

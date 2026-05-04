@@ -30,12 +30,19 @@ namespace net
         // 错误的回调 
         void ErrorCallback();
 
+        void WriteCallback();
         void OnMessage();
 
         void SetCloseCallback(std::function<void(Connection*)> cb);
         void SetErrorCallback(std::function<void(Connection*)> cb);
+        void SetMessageCallback(std::function<void(Connection*, std::string)> cb);
+        void SetWriteCompleteCallback(std::function<void(Connection*)> cb);
+
+        void Send(const char* data, size_t size);
+
     private:
-        // 一个Acceptor对应一个loop
+        void FlushOutput();
+
         EventLoop* loop_;
         // 监听socket
         std::unique_ptr<Socket> client_sock_;
@@ -43,6 +50,8 @@ namespace net
 
         std::function<void(Connection*)> close_callback_; // 将回调TcpServer::CloseConnection();
         std::function<void(Connection*)> error_callback_;
+        std::function<void(Connection*, std::string)> message_callback_;
+        std::function<void(Connection*)> write_complete_callback_;
 
         Buffer input_buffer_;
         Buffer output_buffer_;
