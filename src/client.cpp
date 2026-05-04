@@ -7,6 +7,7 @@
 #include <exception>
 #include <format>
 #include <iostream>
+#include <memory>
 #include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
@@ -15,6 +16,18 @@
 namespace
 {
     constexpr size_t kMaxPayloadBytes = 16 * 1024 * 1024;
+
+    struct FdCloser
+    {
+        void operator()(int* fd) const noexcept
+        {
+            if (fd && *fd >= 0)
+            {
+                ::close(*fd);
+            }
+            delete fd;
+        }
+    };
 
     void EncodeBe32(uint32_t v, unsigned char* p)
     {
@@ -110,8 +123,8 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    const int sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0)
+    std::unique_ptr<int, FdCloser> sockfd(new int(::socket(AF_INET, SOCK_STREAM, 0)));
+    if (*sockfd < 0)
     {
         std::cout << std::format("socket() failed.\n");
         return -1;
@@ -128,13 +141,11 @@ int main(int argc, char* argv[])
     catch (const std::exception&)
     {
         std::cout << std::format("invalid port.\n");
-        ::close(sockfd);
         return -1;
     }
     if (port_num < 0 || port_num > 65535)
     {
         std::cout << std::format("port out of range.\n");
-        ::close(sockfd);
         return -1;
     }
     servaddr.sin_port = htons(static_cast<std::uint16_t>(port_num));
@@ -142,14 +153,12 @@ int main(int argc, char* argv[])
     if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) != 1)
     {
         std::cout << std::format("invalid address.\n");
-        ::close(sockfd);
         return -1;
     }
 
-    if (connect(sockfd, reinterpret_cast<sockaddr*>(&servaddr), sizeof(servaddr)) != 0)
+    if (connect(*sockfd, reinterpret_cast<sockaddr*>(&servaddr), sizeof(servaddr)) != 0)
     {
         std::cout << std::format("connect({}:{}) failed.\n", argv[1], argv[2]);
-        ::close(sockfd);
         return -1;
     }
 
@@ -166,24 +175,21 @@ int main(int argc, char* argv[])
         }
 
         const auto len = std::strlen(buf.data());
-        if (!SendFrame(sockfd, buf.data(), len))
+        if (!SendFrame(*sockfd, buf.data(), len))
         {
             std::cout << std::format("write() failed.\n");
-            ::close(sockfd);
             return -1;
         }
 
         std::string reply;
-        if (!RecvFrame(sockfd, reply))
+        if (!RecvFrame(*sockfd, reply))
         {
             std::cout << std::format("read() failed.\n");
-            ::close(sockfd);
             return -1;
         }
 
         std::cout << std::format("recv:{}\n", reply);
     }
 
-    ::close(sockfd);
     return 0;
 }
