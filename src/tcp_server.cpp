@@ -69,19 +69,16 @@ namespace net
 
     void TcpServer::OnMessage(Connection* conn, std::string message)
     {
-        if (message_handler_)
-            message_handler_(conn, std::move(message));
+        message_handler_(conn, std::move(message));
     }
 
     void TcpServer::OnSendComplete(Connection* conn)
     {
-        if (send_complete_handler_)
-            send_complete_handler_(conn);
+        send_complete_handler_(conn);
     }
 
     void TcpServer::OnTimeout(EventLoop* loop)
     {
-        if (timeout_handler_)
-            timeout_handler_(loop);
+        timeout_handler_(loop);
     }
 }
