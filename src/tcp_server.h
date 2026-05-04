@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <unordered_map>
 
 #include "event_loop.h"
@@ -22,6 +23,10 @@ namespace net
         void Start();
 
         void NewConnection(std::unique_ptr<Socket> client_sock);
+
+        void CloseConnection(Connection* conn); // 在Connection中回调
+        void ErrorConnection(Connection* conn); // 在Connection中回调
+
     private:
         EventLoop loop_;
         std::unique_ptr<Acceptor>  acceptor_;

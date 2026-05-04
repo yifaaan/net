@@ -35,13 +35,18 @@ namespace net
         void OnMessage();
 
         // 设置读回调
-        void SetReadCallback(std::function<void()> read_callback);
+        void SetReadCallback(std::function<void()> cb);
+
+        void SetCloseCallback(std::function<void()> cb);
+        void SetErrorCallback(std::function<void()> cb);
     private:
         int fd_{ -1 };
         bool in_epoll_{};
         EventLoop *loop_{};
         uint32_t events_{};
         uint32_t revents_{};
-        std::function<void()> read_callback_{};
+        std::function<void()> read_callback_{}; // fd读事件的回调：acceptor->Acceptor::NewConnection();
+        std::function<void()> close_callback_{}; // Connection::CloseCallback();
+        std::function<void()> error_callback_{}; // Connection::ErrorCallback();
     };
 }

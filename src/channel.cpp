@@ -58,8 +58,7 @@ namespace net
     {
         if (revents_ & EPOLLRDHUP) // 对方已关闭，有些系统检测不到，可以使用EPOLLIN，recv()返回0。
         {
-            std::cout << std::format("client(eventfd={}) disconnected.\n", fd_);
-            ::close(fd_); // 关闭客户端的fd。
+            close_callback_();
         } //  普通数据  带外数据
         else if (revents_ & (EPOLLIN | EPOLLPRI)) // 接收缓冲区中有数据可以读。
         {
@@ -79,8 +78,7 @@ namespace net
         }
         else // 其它事件，都视为错误。
         {
-            std::cout << std::format("client(eventfd={}) error.\n", fd_);
-            ::close(fd_); // 关闭客户端的fd。
+            error_callback_();
         }
     }
 
@@ -115,9 +113,18 @@ namespace net
         }
     }
 
-    void Channel::SetReadCallback(std::function<void()> read_callback)
+    void Channel::SetReadCallback(std::function<void()> cb)
     {
-        read_callback_ = std::move(read_callback);
+        read_callback_ = std::move(cb);
+    }
+
+    void Channel::SetCloseCallback(std::function<void()> cb)
+    {
+        close_callback_ = std::move(cb);
+    }
+    void Channel::SetErrorCallback(std::function<void()> cb)
+    {
+        error_callback_ = std::move(cb);
     }
 
 }

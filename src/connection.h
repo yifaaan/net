@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 
 namespace net
@@ -20,11 +21,24 @@ namespace net
         int fd() const;
         uint16_t port() const;
         const std::string& ip() const;
+
+        // 连接断开的回调
+        void CloseCallback();
+
+        // 错误的回调 
+        void ErrorCallback();
+
+
+        void SetCloseCallback(std::function<void(Connection*)> cb);
+        void SetErrorCallback(std::function<void(Connection*)> cb);
     private:
         // 一个Acceptor对应一个loop
         EventLoop* loop_;
         // 监听socket
         std::unique_ptr<Socket> client_sock_;
         std::unique_ptr<Channel> channel_;
+
+        std::function<void(Connection*)> close_callback_; // 将回调TcpServer::CloseConnection();
+        std::function<void(Connection*)> error_callback_;
     };
 }
