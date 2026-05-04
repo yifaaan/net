@@ -26,6 +26,10 @@ namespace net
 
     EventLoop::~EventLoop()
     {
+        if (wakeup_channel_)
+        {
+            wakeup_channel_->RemoveChannel();
+        }
         wakeup_channel_.reset();
         if (wakeup_fd_ >= 0)
         {
@@ -70,6 +74,11 @@ namespace net
     void EventLoop::UpdateChannel(Channel *ch)
     {
         ep_->UpdateChannel(ch);
+    }
+
+    void EventLoop::RemoveChannel(Channel* ch)
+    {
+        ep_->RemoveChannel(ch);
     }
 
     void EventLoop::WakeupRead()

@@ -46,9 +46,18 @@ namespace net
     {
         in_epoll_ = true;
     }
+    void Channel::SetNotInEpoll()
+    {
+        in_epoll_ = false;
+    }
     bool Channel::in_epoll() const
     {
         return in_epoll_;
+    }
+
+    void Channel::RemoveChannel()
+    {
+        loop_->RemoveChannel(this);
     }
 
     void Channel::SetREvents(uint32_t ev)

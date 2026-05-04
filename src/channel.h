@@ -24,7 +24,11 @@ namespace net
         void DisableWriting();
         // 表示已加入epoll树上
         void SetInEpoll();
+        void SetNotInEpoll();
         bool in_epoll() const;
+
+        /** 从本 loop 的 epoll 实例摘除（EPOLL_CTL_DEL）；未加入则为空操作。 */
+        void RemoveChannel();
 
         void SetREvents(uint32_t ev);
         uint32_t events() const;

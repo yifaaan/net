@@ -16,6 +16,7 @@ namespace net
 
         // void AddFd(int fd, uint32_t op);
         void UpdateChannel(Channel* channel);
+        void RemoveChannel(Channel* channel);
         // std::vector<epoll_event> Wait(int timeout = -1);
         std::vector<Channel*> Wait(int timeout = -1);
         

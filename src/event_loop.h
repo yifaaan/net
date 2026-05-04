@@ -28,6 +28,7 @@ namespace net
 
         Epoll* ep() const;
         void UpdateChannel(Channel *ch);
+        void RemoveChannel(Channel* ch);
     private:
         void WakeupRead();
 

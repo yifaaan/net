@@ -67,6 +67,10 @@ namespace net
         {
             return;
         }
+        if (channel_)
+        {
+            channel_->RemoveChannel();
+        }
         channel_.reset();
         client_sock_.reset();
     }

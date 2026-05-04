@@ -59,6 +59,20 @@ namespace net
         }
     }
 
+    void Epoll::RemoveChannel(Channel* channel)
+    {
+        if (!channel->in_epoll())
+        {
+            return;
+        }
+        if (::epoll_ctl(fd_, EPOLL_CTL_DEL, channel->fd(), nullptr) == -1)
+        {
+            ::perror("epoll_ctl(EPOLL_CTL_DEL)");
+            std::exit(-1);
+        }
+        channel->SetNotInEpoll();
+    }
+
     // std::vector<epoll_event> Epoll::Wait(int timeout)
     // {
     //     std::vector<epoll_event> evts;
