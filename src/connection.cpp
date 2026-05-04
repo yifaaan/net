@@ -48,27 +48,39 @@ namespace net
 
     int Connection::fd() const
     {
-        return client_sock_->fd();
+        return client_sock_ ? client_sock_->fd() : -1;
     }
     uint16_t Connection::port() const
     {
-        return client_sock_->port();
+        return client_sock_ ? client_sock_->port() : 0;
     }
     const std::string& Connection::ip() const
     {
-        return client_sock_->ip();
+        static const std::string kEmpty;
+        return client_sock_ ? client_sock_->ip() : kEmpty;
+    }
+
+    void Connection::TearDown()
+    {
+        bool expected = false;
+        if (!torn_down_.compare_exchange_strong(expected, true, std::memory_order_acq_rel))
+        {
+            return;
+        }
+        channel_.reset();
+        client_sock_.reset();
     }
 
     // 连接断开的回调
     void Connection::CloseCallback()
     {
-        close_callback_(this);
+        close_callback_(shared_from_this());
     }
 
     // 错误的回调
     void Connection::ErrorCallback()
     {
-        error_callback_(this);
+        error_callback_(shared_from_this());
     }
 
     void Connection::WriteCallback()
@@ -78,6 +90,10 @@ namespace net
 
     void Connection::FlushOutput()
     {
+        if (torn_down_.load(std::memory_order_acquire) || !channel_ || !client_sock_)
+        {
+            return;
+        }
         if (output_buffer_.size() == 0)
             return;
         while (output_buffer_.size() > 0)
@@ -97,7 +113,7 @@ namespace net
             return;
         }
         channel_->DisableWriting();
-        write_complete_callback_(this);
+        write_complete_callback_(shared_from_this());
     }
 
     void Connection::DispatchFrames()
@@ -125,7 +141,7 @@ namespace net
             {
                 return;
             }
-            message_callback_(this, std::move(header), std::move(payload));
+            message_callback_(shared_from_this(), std::move(header), std::move(payload));
         }
     }
 
@@ -162,11 +178,11 @@ namespace net
         }
     }
 
-    void Connection::SetCloseCallback(std::function<void(Connection*)> cb)
+    void Connection::SetCloseCallback(std::function<void(std::shared_ptr<Connection>)> cb)
     {
         close_callback_ = std::move(cb);
     }
-    void Connection::SetErrorCallback(std::function<void(Connection*)> cb)
+    void Connection::SetErrorCallback(std::function<void(std::shared_ptr<Connection>)> cb)
     {
         error_callback_ = std::move(cb);
     }
@@ -174,13 +190,17 @@ namespace net
     {
         message_callback_ = std::move(cb);
     }
-    void Connection::SetWriteCompleteCallback(std::function<void(Connection*)> cb)
+    void Connection::SetWriteCompleteCallback(std::function<void(std::shared_ptr<Connection>)> cb)
     {
         write_complete_callback_ = std::move(cb);
     }
 
     void Connection::Send(const char* data, size_t size)
     {
+        if (torn_down_.load(std::memory_order_acquire))
+        {
+            return;
+        }
         if (size > kMaxPayloadBytes)
         {
             ErrorCallback();
@@ -195,6 +215,10 @@ namespace net
 
     void Connection::RunLater(std::function<void()> fn)
     {
+        if (torn_down_.load(std::memory_order_acquire))
+        {
+            return;
+        }
         loop_->RunLater(std::move(fn));
     }
 }

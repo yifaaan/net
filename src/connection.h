@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -14,7 +15,7 @@ namespace net
     class Channel;
 
     // 封装处理用户请求的channel
-    class Connection
+    class Connection : public std::enable_shared_from_this<Connection>
     {
     public:
         Connection(EventLoop* loop, std::unique_ptr<Socket> client_sock);
@@ -35,12 +36,15 @@ namespace net
         /** epoll 可读时由 Channel 调用：把内核缓冲区数据读入 input_buffer_，读到 EAGAIN 后解析帧。 */
         void OnMessage();
 
-        using MessageCallback = void(Connection*, std::string, std::string);
+        using MessageCallback = void(std::shared_ptr<Connection>, std::string, std::string);
 
-        void SetCloseCallback(std::function<void(Connection*)> cb);
-        void SetErrorCallback(std::function<void(Connection*)> cb);
+        void SetCloseCallback(std::function<void(std::shared_ptr<Connection>)> cb);
+        void SetErrorCallback(std::function<void(std::shared_ptr<Connection>)> cb);
         void SetMessageCallback(std::function<MessageCallback> cb);
-        void SetWriteCompleteCallback(std::function<void(Connection*)> cb);
+        void SetWriteCompleteCallback(std::function<void(std::shared_ptr<Connection>)> cb);
+
+        /** 关闭 fd、摘除 Channel；可重复调用。对象可由 shared_ptr 延后析构，但不再读写 socket。 */
+        void TearDown();
 
         /** 发送一帧负载：自动在前面加上 4 字节大端无符号长度（头部），长度为负载字节数。 */
         void Send(const char* data, size_t size);
@@ -59,10 +63,12 @@ namespace net
         std::unique_ptr<Socket> client_sock_;
         std::unique_ptr<Channel> channel_;
 
-        std::function<void(Connection*)> close_callback_; // 将回调TcpServer::CloseConnection();
-        std::function<void(Connection*)> error_callback_;
+        std::function<void(std::shared_ptr<Connection>)> close_callback_; // 将回调TcpServer::CloseConnection();
+        std::function<void(std::shared_ptr<Connection>)> error_callback_;
         std::function<MessageCallback> message_callback_;
-        std::function<void(Connection*)> write_complete_callback_;
+        std::function<void(std::shared_ptr<Connection>)> write_complete_callback_;
+
+        std::atomic<bool> torn_down_{ false };
 
         Buffer input_buffer_;
         Buffer output_buffer_;

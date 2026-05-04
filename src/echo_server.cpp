@@ -13,8 +13,10 @@ namespace net
           thread_pool_(num_worker_threads > 0 ? std::make_unique<ThreadPool>(ThreadPoolKind::Worker, num_worker_threads)
                                               : nullptr)
     {
-        server_.SetMessageHandler([this](Connection* c, std::string h, std::string p) { OnMessage(c, std::move(h), std::move(p)); });
-        server_.SetSendCompleteHandler([this](Connection* c) { OnSendComplete(c); });
+        server_.SetMessageHandler([this](std::shared_ptr<Connection> c, std::string h, std::string p) {
+            OnMessage(std::move(c), std::move(h), std::move(p));
+        });
+        server_.SetSendCompleteHandler([this](std::shared_ptr<Connection> c) { OnSendComplete(std::move(c)); });
         server_.SetTimeoutHandler([this](EventLoop* l) { OnTimeout(l); });
     }
 
@@ -28,7 +30,7 @@ namespace net
         server_.SetEpollWaitTimeoutMs(timeout_ms);
     }
 
-    void EchoServer::OnMessage(Connection* conn, std::string header, std::string payload)
+    void EchoServer::OnMessage(std::shared_ptr<Connection> conn, std::string header, std::string payload)
     {
         if (thread_pool_)
         {
@@ -63,7 +65,7 @@ namespace net
         conn->Send(payload.data(), payload.size());
     }
 
-    void EchoServer::OnSendComplete(Connection* conn)
+    void EchoServer::OnSendComplete(std::shared_ptr<Connection> conn)
     {
         std::cout << std::format("send complete(eventfd={},ip={},port={})\n", conn->fd(), conn->ip(), conn->port());
     }

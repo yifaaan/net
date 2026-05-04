@@ -27,17 +27,17 @@ namespace net
         // epoll_wait 超时。须 >= 0 才会在每次超时时调用 OnTimeout；-1 表示永久阻塞（默认）。
         void SetEpollWaitTimeoutMs(int timeout_ms);
 
-        void SetMessageHandler(std::function<void(Connection*, std::string, std::string)> cb);
-        void SetSendCompleteHandler(std::function<void(Connection*)> cb);
+        void SetMessageHandler(std::function<void(std::shared_ptr<Connection>, std::string, std::string)> cb);
+        void SetSendCompleteHandler(std::function<void(std::shared_ptr<Connection>)> cb);
         void SetTimeoutHandler(std::function<void(EventLoop*)> cb);
 
         void NewConnection(std::unique_ptr<Socket> client_sock);
 
-        void CloseConnection(Connection* conn); // 在Connection中回调
-        void ErrorConnection(Connection* conn); // 在Connection中回调
+        void CloseConnection(std::shared_ptr<Connection> conn); // 在Connection中回调
+        void ErrorConnection(std::shared_ptr<Connection> conn); // 在Connection中回调
 
-        void OnMessage(Connection* conn, std::string header, std::string payload);
-        void OnSendComplete(Connection* conn);
+        void OnMessage(std::shared_ptr<Connection> conn, std::string header, std::string payload);
+        void OnSendComplete(std::shared_ptr<Connection> conn);
         void OnTimeout(EventLoop* loop);
     private:
         /** 主 reactor：监听与新连接默认都注册在此 loop。 */
@@ -49,10 +49,10 @@ namespace net
         std::unique_ptr<ThreadPool> thread_pool_;
         std::unique_ptr<Acceptor> acceptor_;
         /** fd -> Connection，供 Close/Error 回调按 fd 摘除。 */
-        std::unordered_map<int, std::unique_ptr<Connection>> conns_;
+        std::unordered_map<int, std::shared_ptr<Connection>> conns_;
 
-        std::function<void(Connection*, std::string, std::string)> message_handler_;
-        std::function<void(Connection*)> send_complete_handler_;
+        std::function<void(std::shared_ptr<Connection>, std::string, std::string)> message_handler_;
+        std::function<void(std::shared_ptr<Connection>)> send_complete_handler_;
         std::function<void(EventLoop*)> timeout_handler_;
     };
 }

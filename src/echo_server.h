@@ -23,8 +23,8 @@ namespace net
         void SetEpollWaitTimeoutMs(int timeout_ms);
 
     private:
-        void OnMessage(Connection* conn, std::string header, std::string payload);
-        void OnSendComplete(Connection* conn);
+        void OnMessage(std::shared_ptr<Connection> conn, std::string header, std::string payload);
+        void OnSendComplete(std::shared_ptr<Connection> conn);
         void OnTimeout(EventLoop* loop);
 
         TcpServer server_;

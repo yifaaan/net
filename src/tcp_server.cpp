@@ -47,12 +47,12 @@ namespace net
 
     void TcpServer::SetEpollWaitTimeoutMs(int timeout_ms) { loop_->SetWaitTimeoutMs(timeout_ms); }
 
-    void TcpServer::SetMessageHandler(std::function<void(Connection*, std::string, std::string)> cb)
+    void TcpServer::SetMessageHandler(std::function<void(std::shared_ptr<Connection>, std::string, std::string)> cb)
     {
         message_handler_ = std::move(cb);
     }
 
-    void TcpServer::SetSendCompleteHandler(std::function<void(Connection*)> cb)
+    void TcpServer::SetSendCompleteHandler(std::function<void(std::shared_ptr<Connection>)> cb)
     {
         send_complete_handler_ = std::move(cb);
     }
@@ -66,7 +66,7 @@ namespace net
     void TcpServer::NewConnection(std::unique_ptr<Socket> client_sock)
     {
         // 当前仍挂主 loop；若要多 reactor，可改为轮询 sub_loops_[i]->get()。
-        auto conn = std::make_unique<Connection>(loop_.get(), std::move(client_sock));
+        auto conn = std::make_shared<Connection>(loop_.get(), std::move(client_sock));
         conn->SetCloseCallback(std::bind(&TcpServer::CloseConnection, this, std::placeholders::_1));
         conn->SetErrorCallback(std::bind(&TcpServer::ErrorConnection, this, std::placeholders::_1));
         conn->SetMessageCallback(std::bind(
@@ -74,26 +74,30 @@ namespace net
         conn->SetWriteCompleteCallback(std::bind(&TcpServer::OnSendComplete, this, std::placeholders::_1));
         std::cout << std::format("new connection(fd={},ip={},port={}) ok.\n", conn->fd(), conn->ip(), conn->port());
 
-        conns_.emplace(conn->fd(), std::move(conn));
+        conns_.emplace(conn->fd(), conn);
     }
 
-    void TcpServer::CloseConnection(Connection* conn)
+    void TcpServer::CloseConnection(std::shared_ptr<Connection> conn)
     {
-        std::cout << std::format("client(eventfd={}) disconnected.\n", conn->fd());
-        conns_.erase(conn->fd());
+        const int fd = conn->fd();
+        std::cout << std::format("client(eventfd={}) disconnected.\n", fd);
+        conn->TearDown();
+        conns_.erase(fd);
     }
-    void TcpServer::ErrorConnection(Connection* conn)
+    void TcpServer::ErrorConnection(std::shared_ptr<Connection> conn)
     {
-        std::cout << std::format("client(eventfd={}) error.\n", conn->fd());
-        conns_.erase(conn->fd());
+        const int fd = conn->fd();
+        std::cout << std::format("client(eventfd={}) error.\n", fd);
+        conn->TearDown();
+        conns_.erase(fd);
     }
 
-    void TcpServer::OnMessage(Connection* conn, std::string header, std::string payload)
+    void TcpServer::OnMessage(std::shared_ptr<Connection> conn, std::string header, std::string payload)
     {
-        message_handler_(conn, std::move(header), std::move(payload));
+        message_handler_(std::move(conn), std::move(header), std::move(payload));
     }
 
-    void TcpServer::OnSendComplete(Connection* conn) { send_complete_handler_(conn); }
+    void TcpServer::OnSendComplete(std::shared_ptr<Connection> conn) { send_complete_handler_(std::move(conn)); }
 
     void TcpServer::OnTimeout(EventLoop* loop) { timeout_handler_(loop); }
 }
