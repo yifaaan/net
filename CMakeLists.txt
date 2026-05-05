@@ -22,4 +22,5 @@ add_executable(net_main
     src/acceptor.cc
     src/connection.cc
     src/buffer.cc
+    src/echo_server.cc
 )

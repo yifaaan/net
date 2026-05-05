@@ -1,7 +1,7 @@
 #include <format>
 #include <iostream>
 
-#include "tcp_server.h"
+#include "echo_server.h"
 
 int main(int argc, char* argv[]) {
   if (argc != 3) {
@@ -10,6 +10,6 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  TcpServer server{argv[1], static_cast<uint16_t>(std::atoi(argv[2]))};
+  EchoServer server{argv[1], static_cast<uint16_t>(std::atoi(argv[2]))};
   server.Start();
 }

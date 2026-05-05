@@ -14,9 +14,8 @@ TcpServer::TcpServer(const std::string& ip, uint16_t port)
       [this](Socket* client_sock) { HandleNewConnection(client_sock); });
 
   // 设置epoll_wait超时回调
-  loop_.SetEpollTimeoutCallback([this](EventLoop* loop) {
-    EpollTimeout(loop);
-  });
+  loop_.SetEpollTimeoutCallback(
+      [this](EventLoop* loop) { EpollTimeout(loop); });
 }
 
 TcpServer::~TcpServer() {
@@ -42,38 +41,55 @@ void TcpServer::HandleNewConnection(Socket* client_sock) {
       [this](Connection* conn) { SendComplete(conn); });
   std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
                            conn->fd(), conn->ip(), conn->port());
+
+  // for echo server
+  new_connection_callback_(conn);
 }
 
 void TcpServer::HandleCloseConnection(Connection* conn) {
+  // for echo server
+  close_connection_callback_(conn);
+
   // 对方已关闭，有些系统检测不到，可以使用EPOLLIN，recv()返回0。
-  std::cout << std::format("1client(eventfd={}) disconnected.\n", conn->fd());
+  // std::cout << std::format("1client(eventfd={}) disconnected.\n",
+  // conn->fd());
   conns_.erase(conn->fd());
   delete conn;
 }
 
 void TcpServer::HandleErrorConnection(Connection* conn) {
-  std::cout << std::format("client(eventfd={}) error.\n", conn->fd());
+  // for echo server
+  error_connection_callback_(conn);
+
+  // std::cout << std::format("client(eventfd={}) error.\n", conn->fd());
   conns_.erase(conn->fd());
   delete conn;
 }
 
 void TcpServer::OnMessage(Connection* conn, std::string& message) {
-  message = "reply:" + message;
+  // for echo server
+  on_message_callback_(conn, message);
 
-  // 回应报文
-  int len = message.size();
-  std::string tmp{reinterpret_cast<char*>(&len), sizeof(len)};
-  tmp += message;
-  // 将数据写入Connection的output_buffer
-  conn->Send(tmp.data(), tmp.size());
+  // message = "reply:" + message;
+
+  // // 回应报文
+  // int len = message.size();
+  // std::string tmp{reinterpret_cast<char*>(&len), sizeof(len)};
+  // tmp += message;
+  // // 将数据写入Connection的output_buffer
+  // conn->Send(tmp.data(), tmp.size());
 }
 
 void TcpServer::SendComplete(Connection* conn) {
-  std::cout << "send complete\n";
+  // for echo server
+  send_complete_callback_(conn);
+
   // ...
 }
 
 void TcpServer::EpollTimeout(EventLoop* loop) {
-  std::cout << "epoll_wait() timeout\n";
+  // for echo server
+  epoll_timeout_callback_(loop);
+
   // ...
 }
