@@ -7,6 +7,7 @@
 #include <format>
 #include <iostream>
 
+#include "connection.h"
 #include "epoll.h"
 #include "inet_address.h"
 #include "socket.h"
@@ -59,12 +60,7 @@ void Channel::HandleNewConnection(Socket* server_sock) {
   std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
                            client_fd, client_addr.ip(), client_addr.port());
 
-  // 为新客户端连接准备读事件，并添加到epoll中。
-  auto client_ch = new Channel{loop_, client_fd};
-  // 指定读回调
-  client_ch->SetReadCallback([=] { client_ch->HandleOnMessage(); });
-  client_ch->UseET();  // 边缘触发
-  client_ch->EnableReading();
+  Connection* conn = new Connection{loop_, client_sock};
 }
 
 void Channel::HandleOnMessage() {

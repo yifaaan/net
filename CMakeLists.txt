@@ -20,4 +20,5 @@ add_executable(net_main
     src/event_loop.cc
     src/tcp_server.cc
     src/acceptor.cc
+    src/connection.cc
 )
