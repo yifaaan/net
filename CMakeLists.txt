@@ -9,10 +9,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_subdirectory(examples)
 
 add_executable(net_client
-    src/client.cpp
+    src/client.cc
 )
 
 add_executable(net_main
-    src/tcpepoll.cpp
-    src/inet_address.cpp
+    src/tcpepoll.cc
+    src/inet_address.cc
 )

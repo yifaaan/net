@@ -15,6 +15,7 @@
 #include <string_view>
 
 #include "inet_address.h"
+#include "socket.h"
 
 int main(int argc, char* argv[]) {
   if (argc != 3) {
@@ -23,49 +24,23 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  // 创建服务端用于监听的listenfd。
-  int listenfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
-  if (listenfd < 0) {
-    perror("socket() failed");
-    return -1;
-  }
-
-  // 设置listenfd的属性
-  int opt = 1;
-  setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &opt,
-             static_cast<socklen_t>(sizeof opt));  // 必须的。
-  setsockopt(listenfd, SOL_SOCKET, TCP_NODELAY, &opt,
-             static_cast<socklen_t>(sizeof opt));  // 必须的。
-  setsockopt(
-      listenfd, SOL_SOCKET, SO_REUSEPORT, &opt,
-      static_cast<socklen_t>(sizeof opt));  // 有用，但是，在Reactor中意义不大。
-  setsockopt(
-      listenfd, SOL_SOCKET, SO_KEEPALIVE, &opt,
-      static_cast<socklen_t>(sizeof opt));  // 可能有用，但是，建议自己做心跳。
-
   InetAddress serv_addr(argv[1], atoi(argv[2]));
-  if (bind(listenfd, serv_addr.addr(), sizeof(sockaddr)) < 0) {
-    perror("bind() failed");
-    close(listenfd);
-    return -1;
-  }
-
-  if (listen(listenfd, 128) !=
-      0)  // 在高并发的网络服务器中，第二个参数要大一些。
-  {
-    perror("listen() failed");
-    close(listenfd);
-    return -1;
-  }
+  // 创建服务端用于监听的listenfd。
+  int listen_fd = CreateNonBlocking();
+  Socket serv_sock{listen_fd};
+  serv_sock.SetNodelay(true);
+  serv_sock.SetReUseAddr(true);
+  serv_sock.Bind(serv_addr);
+  serv_sock.Listen();
 
   int epollfd = epoll_create(1);  // 创建epoll句柄（红黑树）。
 
-  // 为服务端的listenfd准备读事件。
+  // 为服务端的listen_fd准备读事件。
   struct epoll_event ev;
-  ev.data.fd = listenfd;
-  ev.events = EPOLLIN;  // 让epoll监视listenfd的读事件，采用水平触发。
+  ev.data.fd = listen_fd;
+  ev.events = EPOLLIN;  // 让epoll监视listen_fd的读事件，采用水平触发。
 
-  epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &ev);
+  epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_fd, &ev);
 
   struct epoll_event evs[10];  // 存放epoll_wait()返回事件的数组。
 
@@ -95,20 +70,21 @@ int main(int argc, char* argv[]) {
       } else if (evs[ii].events & (EPOLLIN | EPOLLPRI)) {
         //  普通数据  带外数据
         // 接收缓冲区中有数据可以读。
-        if (evfd == listenfd) {
-          struct sockaddr_in clientaddr;
-          socklen_t len = sizeof(clientaddr);
-          int clientfd = accept4(listenfd, (struct sockaddr*)&clientaddr, &len,
-                                 SOCK_NONBLOCK);
-          InetAddress client_addr{clientaddr};
+        if (evfd == listen_fd) {
+          sockaddr_in addr{};
+          InetAddress client_addr;
+          // 接收客户端连接
+          auto client_sock = new Socket{serv_sock.Accept(client_addr)};
+          int client_fd = client_sock->fd();
+
           std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
-                                   clientfd, client_addr.ip(),
+                                   client_fd, client_addr.ip(),
                                    client_addr.port());
 
           // 为新客户端连接准备读事件，并添加到epoll中。
-          ev.data.fd = clientfd;
+          ev.data.fd = client_fd;
           ev.events = EPOLLIN | EPOLLET;  // 边缘触发。
-          epoll_ctl(epollfd, EPOLL_CTL_ADD, clientfd, &ev);
+          epoll_ctl(epollfd, EPOLL_CTL_ADD, client_fd, &ev);
         } else {
           char buffer[1024];
           // 由于使用非阻塞IO，一次读取buffer大小数据，直到全部的数据读取完毕。
