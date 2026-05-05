@@ -10,8 +10,9 @@
 #include "epoll.h"
 #include "inet_address.h"
 #include "socket.h"
+#include "event_loop.h"
 
-Channel::Channel(Epoll* ep, int fd) : ep_{ep}, fd_{fd} {}
+Channel::Channel(EventLoop* loop, int fd) : loop_{loop}, fd_{fd} {}
 
 Channel::~Channel() = default;
 
@@ -19,12 +20,12 @@ void Channel::UseET() { events_ |= EPOLLET; }
 
 void Channel::EnableReading() {
   events_ |= EPOLLIN;
-  ep_->UpdateChannel(this);
+  loop_->UpdateChannel(this);
 }
 
 void Channel::EnableWriting() {
   events_ |= EPOLLOUT;
-  ep_->UpdateChannel(this);
+  loop_->UpdateChannel(this);
 }
 
 void Channel::SetInEpoll() { in_epoll_ = true; }
@@ -59,7 +60,7 @@ void Channel::HandleNewConnection(Socket* server_sock) {
                            client_fd, client_addr.ip(), client_addr.port());
 
   // 为新客户端连接准备读事件，并添加到epoll中。
-  auto client_ch = new Channel{ep_, client_fd};
+  auto client_ch = new Channel{loop_, client_fd};
   // 指定读回调
   client_ch->SetReadCallback([=] { client_ch->HandleOnMessage(); });
   client_ch->UseET();  // 边缘触发

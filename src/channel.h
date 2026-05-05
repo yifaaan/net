@@ -5,12 +5,13 @@
 
 class Epoll;
 class Socket;
+class EventLoop;
 
 // 作为epoll_event.data.ptr，和 Epoll.Loop(epoll_wait)的返回
 // 包含fd及其事件控制，epoll_wait返回后处理各种事件
 class Channel {
  public:
-  Channel(Epoll* ep, int fd);
+  Channel(EventLoop* loop, int fd);
   ~Channel();
 
   int fd() const { return fd_; }
@@ -50,7 +51,7 @@ class Channel {
  private:
   int fd_{-1};
   bool in_epoll_{};     // 已添加到epoll
-  Epoll* ep_{};         // 所属的epoll
+  EventLoop* loop_{};   // 所属的EventLoop
   uint32_t events_{};   // fd_需要监听的事件
   uint32_t revents_{};  // fd_已发生的事件
 

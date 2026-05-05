@@ -17,4 +17,6 @@ add_executable(net_main
     src/inet_address.cc
     src/epoll.cc
     src/channel.cc
+    src/event_loop.cc
+    src/tcp_server.cc
 )
