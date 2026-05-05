@@ -1,7 +1,5 @@
 #include "acceptor.h"
 
-#include <format>
-
 #include "channel.h"
 #include "connection.h"
 #include "inet_address.h"
@@ -32,9 +30,6 @@ void Acceptor::HandleNewConnection() {
 
   auto client_sock = new Socket{srv_sock_->Accept(client_addr)};
   int client_fd = client_sock->fd();
-
-  std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
-                           client_fd, client_addr.ip(), client_addr.port());
 
   // 调用TcpServer回调，添加connection
   new_connection_callback_(client_sock);

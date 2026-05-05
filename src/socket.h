@@ -15,6 +15,8 @@ class Socket {
   ~Socket() { ::close(fd_); }
 
   int fd() const { return fd_; }
+  uint16_t port() const { return port_; }
+  const std::string& ip() const { return ip_; }
 
   void SetReUseAddr(bool on) {
     int op = on;
@@ -45,6 +47,8 @@ class Socket {
       std::cerr << "bind() failed";
       std::exit(-1);
     }
+    ip_ = addr.ip();
+    port_ = addr.port();
   }
 
   void Listen(int n = 128) {
@@ -60,12 +64,15 @@ class Socket {
     int client_fd =
         ::accept4(fd_, reinterpret_cast<sockaddr*>(&addr), &len, SOCK_NONBLOCK);
     client_addr.SetAddr(addr);
-
+    ip_ = client_addr.ip();
+    port_ = client_addr.port();
     return client_fd;
   }
 
  private:
   const int fd_{-1};
+  std::string ip_;
+  uint16_t port_{};
 };
 
 inline int CreateNonBlocking() {

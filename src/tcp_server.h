@@ -1,11 +1,13 @@
 #pragma once
 
 #include <cstdint>
+#include <unordered_map>
 
 #include "event_loop.h"
 
 class Acceptor;
 class Socket;
+class Connection;
 
 class TcpServer {
  public:
@@ -19,4 +21,5 @@ class TcpServer {
  private:
   EventLoop loop_;
   std::unique_ptr<Acceptor> acceptor_;
+  std::unordered_map<int, Connection*> conns_;
 };

@@ -6,13 +6,16 @@ class EventLoop;
 class Socket;
 class Channel;
 
-
 // Channel分为专门处理客户连接的Acceptor 和 处理别的事件的Connection
 class Connection {
  public:
- Connection(EventLoop* loop, Socket* client_sock);
- ~Connection();
- 
+  Connection(EventLoop* loop, Socket* client_sock);
+  ~Connection();
+
+  int fd() const;
+  uint16_t port() const;
+  const std::string& ip() const;
+
  private:
   // Acceptor对应的事件循环，构造时传入
   EventLoop* loop_{};

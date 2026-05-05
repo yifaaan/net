@@ -1,5 +1,7 @@
 #include "tcp_server.h"
 
+#include <format>
+
 #include "acceptor.h"
 #include "channel.h"
 #include "connection.h"
@@ -12,10 +14,18 @@ TcpServer::TcpServer(const std::string& ip, uint16_t port)
       [this](Socket* client_sock) { HandleNewConnection(client_sock); });
 }
 
-TcpServer::~TcpServer() = default;
+TcpServer::~TcpServer() {
+  for (auto [_, conn] : conns_) {
+    delete conn;
+  }
+}
 
 void TcpServer::Start() { loop_.Run(); }
 
 void TcpServer::HandleNewConnection(Socket* client_sock) {
   Connection* conn = new Connection{&loop_, client_sock};
+  conns_[conn->fd()] = conn;
+
+  std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
+                           conn->fd(), conn->ip(), conn->port());
 }
