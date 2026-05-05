@@ -3,12 +3,13 @@
 #include <cstdint>
 
 class Epoll;
+class Socket;
 
-// 作为epoll_event.data.ptr
-// 包含fd及其事件控制
+// 作为epoll_event.data.ptr，和 Epoll.Loop(epoll_wait)的返回
+// 包含fd及其事件控制，epoll_wait返回后处理各种事件
 class Channel {
  public:
-  Channel(Epoll* ep, int fd);
+  Channel(Epoll* ep, int fd, bool is_listen);
   ~Channel();
 
   int fd() const { return fd_; }
@@ -29,6 +30,8 @@ class Channel {
 
   void SetRevents(uint32_t e);
 
+  // epoll_wait返回后，执行该函数
+  void HandleEvent(Socket* server_sock);
  private:
   int fd_{-1};
   bool is_listen_{};    // listen fd / client fd?
