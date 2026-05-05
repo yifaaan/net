@@ -37,7 +37,7 @@ class Channel {
 
   // 处理客户端新连接事件
   // void HandleNewConnection(Socket* server_sock);
-  
+
   // 处理读写事件
   void HandleOnMessage();
 
@@ -49,6 +49,14 @@ class Channel {
     write_callback_ = std::move(cb);
   }
 
+  void SetCloseCallback(std::function<void()> cb) {
+    close_callback_ = std::move(cb);
+  }
+
+  void SetErrorCallback(std::function<void()> cb) {
+    error_callback_ = std::move(cb);
+  }
+
  private:
   int fd_{-1};
   bool in_epoll_{};     // 已添加到epoll
@@ -56,8 +64,13 @@ class Channel {
   uint32_t events_{};   // fd_需要监听的事件
   uint32_t revents_{};  // fd_已发生的事件
 
-  // 读回调，在创建Channel时需要指定
+  // 读回调，Connection在创建Channel时需要指定
   std::function<void()> read_callback_;
-  // 写回调，在创建Channel时需要指定
+  // 写回调，Connection在创建Channel时需要指定
   std::function<void()> write_callback_;
+
+  // 客户端断开连接的回调，Connection在创建Channel时需要指定
+  std::function<void()> close_callback_;
+  // 客户端连接错误的回调，Connection在创建Channel时需要指定
+  std::function<void()> error_callback_;
 };

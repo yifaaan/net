@@ -33,9 +33,7 @@ void Channel::SetRevents(uint32_t e) { revents_ = e; }
 
 void Channel::HandleEvent() {
   if (revents_ & EPOLLRDHUP) {
-    // 对方已关闭，有些系统检测不到，可以使用EPOLLIN，recv()返回0。
-    std::cout << std::format("1client(eventfd={}) disconnected.\n", fd_);
-    ::close(fd_);  // 关闭客户端的fd。
+    close_callback_();
   } else if (revents_ & (EPOLLIN | EPOLLPRI)) {
     //  普通数据  带外数据
     // 接收缓冲区中有数据可以读。
@@ -43,8 +41,7 @@ void Channel::HandleEvent() {
   } else if (revents_ & EPOLLOUT) {
     // 有数据需要写
   } else {  // 其它事件，都视为错误。
-    std::cout << std::format("client(eventfd={}) error.\n", fd_);
-    ::close(fd_);  // 关闭客户端的fd。
+    error_callback_();
   }
 }
 
@@ -80,8 +77,7 @@ void Channel::HandleOnMessage() {
       // 全部的数据已读取完毕。
       break;
     } else if (nread == 0) {  // 客户端连接已断开。
-      std::cout << std::format("client(eventfd={}) disconnected.\n", fd_);
-      ::close(fd_);  // 关闭客户端的fd。
+      close_callback_();
       break;
     }
   }

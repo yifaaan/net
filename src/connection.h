@@ -16,6 +16,12 @@ class Connection {
   uint16_t port() const;
   const std::string& ip() const;
 
+  // Tcp连接断开的回调，Channel类检测到断开后 回调
+  void CloseCallback();
+
+  // Tcp连接错误的 回调，Channel类检测到错误后 回调
+  void ErrorCcallback();
+
  private:
   // Acceptor对应的事件循环，构造时传入
   EventLoop* loop_{};
