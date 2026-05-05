@@ -26,6 +26,8 @@ class TcpServer {
   // 处理客户端连接错误，在Connection中回调
   void HandleErrorConnection(Connection* conn);
 
+  // 处理客户端的请求报文，在Connection类中回调
+  void OnMessage(Connection* conn, std::string& message);
  private:
   EventLoop loop_;
   std::unique_ptr<Acceptor> acceptor_;

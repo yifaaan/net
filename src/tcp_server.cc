@@ -30,7 +30,9 @@ void TcpServer::HandleNewConnection(Socket* client_sock) {
       [this](Connection* conn) { HandleCloseConnection(conn); });
   conn->SetErrorCallback(
       [this](Connection* conn) { HandleErrorConnection(conn); });
-
+  conn->SetOnMessageCallback([this](Connection* conn, std::string& message) {
+    OnMessage(conn, message);
+  });
   std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
                            conn->fd(), conn->ip(), conn->port());
 }
@@ -46,4 +48,15 @@ void TcpServer::HandleErrorConnection(Connection* conn) {
   std::cout << std::format("client(eventfd={}) error.\n", conn->fd());
   conns_.erase(conn->fd());
   delete conn;
+}
+
+void TcpServer::OnMessage(Connection* conn, std::string& message) {
+  message = "reply:" + message;
+
+  // 回应报文
+  int len = message.size();
+  std::string tmp{reinterpret_cast<char*>(&len), sizeof(len)};
+  tmp += message;
+  // Send
+  ::send(conn->fd(), tmp.data(), tmp.size(), 0);
 }

@@ -1,5 +1,6 @@
 #include "connection.h"
 
+#include <cstring>
 #include <format>
 
 #include "channel.h"
@@ -10,8 +11,7 @@ Connection::Connection(EventLoop* loop, Socket* client_sock) : loop_{loop} {
   client_channel_ = std::make_unique<Channel>(loop_, client_sock_->fd());
 
   // 设置客户端的读回调
-  client_channel_->SetReadCallback(
-      [ch = client_channel_.get()] { ch->HandleOnMessage(); });
+  client_channel_->SetReadCallback([this] { HandleOnMessage(); });
   // 设置客户端连接断开的回调
   client_channel_->SetCloseCallback([this] { CloseCallback(); });
   //  设置客户端连接错误的回调
@@ -32,3 +32,41 @@ const std::string& Connection::ip() const { return client_sock_->ip(); }
 void Connection::CloseCallback() { close_callback_(this); }
 
 void Connection::ErrorCallback() { error_callback_(this); }
+
+void Connection::HandleOnMessage() {
+  char buffer[1024]{};
+  // 由于使用非阻塞IO，一次读取buffer大小数据，直到全部的数据读取完毕。
+  while (true) {
+    std::fill(buffer, buffer + sizeof(buffer), 0);
+    ssize_t nread = ::read(fd(), buffer, sizeof(buffer));
+    if (nread > 0)  // 成功的读取到了数据。
+    {
+      input_buffer_.Append(buffer, nread);
+    } else if (nread == -1 && errno == EINTR) {
+      // 读取数据的时候被信号中断，继续读取。
+      continue;
+    } else if (nread == -1 && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) {
+      // 内核接收缓冲区的全部的数据已读取完毕。
+      while (true) {
+        int len;
+        std::memcpy(&len, input_buffer_.data(), sizeof(len));
+        // inputbuffer 中数据量小于len，说明报文不完整
+        if (input_buffer_.size() < len + 4) break;
+
+        // 从inputbuffer获取 一个报文
+        std::string message{input_buffer_.data() + sizeof(len),
+                            static_cast<size_t>(len)};
+        input_buffer_.Erase(0, sizeof(len) + len);
+
+        // Calculate...
+        std::cout << std::format("message (eventfd={}):{}", fd(), message);
+
+        on_message_callback_(this, message);
+      }
+      break;
+    } else if (nread == 0) {  // 客户端连接已断开。
+      close_callback_(this);
+      break;
+    }
+  }
+}

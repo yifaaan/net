@@ -18,6 +18,11 @@ class Socket {
   uint16_t port() const { return port_; }
   const std::string& ip() const { return ip_; }
 
+  void SetIpPort(const std::string& ip, uint16_t port) {
+    ip_ = ip;
+    port_ = port;
+  }
+
   void SetReUseAddr(bool on) {
     int op = on;
     ::setsockopt(fd_, SOL_SOCKET, SO_REUSEPORT, reinterpret_cast<void*>(&op),
@@ -47,8 +52,7 @@ class Socket {
       std::cerr << "bind() failed";
       std::exit(-1);
     }
-    ip_ = addr.ip();
-    port_ = addr.port();
+    SetIpPort(addr.ip(), addr.port());
   }
 
   void Listen(int n = 128) {
@@ -64,8 +68,7 @@ class Socket {
     int client_fd =
         ::accept4(fd_, reinterpret_cast<sockaddr*>(&addr), &len, SOCK_NONBLOCK);
     client_addr.SetAddr(addr);
-    ip_ = client_addr.ip();
-    port_ = client_addr.port();
+
     return client_fd;
   }
 

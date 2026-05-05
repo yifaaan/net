@@ -21,4 +21,5 @@ add_executable(net_main
     src/tcp_server.cc
     src/acceptor.cc
     src/connection.cc
+    src/buffer.cc
 )

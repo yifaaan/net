@@ -30,8 +30,7 @@ void Acceptor::HandleNewConnection() {
 
   auto client_sock = new Socket{srv_sock_->Accept(client_addr)};
   int client_fd = client_sock->fd();
-
+  client_sock->SetIpPort(client_addr.ip(), client_addr.port());
   // 调用TcpServer回调，添加connection
   new_connection_callback_(client_sock);
 }
-

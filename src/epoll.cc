@@ -9,8 +9,8 @@
 #include "channel.h"
 
 Epoll::Epoll() {
-  int fd = ::epoll_create(1);
-  if (fd < 0) {
+  fd_ = ::epoll_create(1);
+  if (fd_ < 0) {
     std::cerr << "epoll_create() failed";
     std::exit(-1);
   }
@@ -34,7 +34,7 @@ void Epoll::UpdateChannel(Channel* ch) {
   ev.events = ch->events();
 
   int op = ch->in_epoll() ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
-  if (epoll_ctl(ch->fd(), op, ch->fd(), &ev) == -1) {
+  if (epoll_ctl(fd_, op, ch->fd(), &ev) == -1) {
     std::cerr << "epoll_ctl() failed";
     std::exit(-1);
   }

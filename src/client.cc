@@ -39,27 +39,21 @@ int main(int argc, char* argv[]) {
 
   for (int ii = 0; ii < 200000; ii++) {
     // 从命令行输入内容。
-    memset(buf, 0, sizeof(buf));
-    printf("please input:");
-    scanf("%s", buf);
+    ::memset(buf, 0, sizeof(buf));
+    ::sprintf(buf, "这是第%d句话\n", ii);
 
-    if (send(sockfd, buf, strlen(buf), 0) <=
-        0)  // 把命令行输入的内容发送给服务端。
-    {
-      printf("write() failed.\n");
-      close(sockfd);
-      return -1;
-    }
-
-    memset(buf, 0, sizeof(buf));
-    if (recv(sockfd, buf, sizeof(buf), 0) <= 0)  // 接收服务端的回应。
-    {
-      printf("read() failed.\n");
-      close(sockfd);
-      return -1;
-    }
-
-    printf("recv:%s\n", buf);
+    char tmp[1024]{};
+    int len = strlen(buf);
+    ::memcpy(tmp, &len, sizeof(len));
+    ::memcpy(tmp + sizeof(len), buf, len);
+    ::send(sockfd, tmp, len + sizeof(len), 0);
+  }
+  for (int ii = 0; ii < 200000; ii++) {
+    int len;
+    ::recv(sockfd, &len, sizeof(len), 0);
+    ::memset(buf, 0, sizeof(buf));
+    ::recv(sockfd, buf, len, 0);
+    printf("%s", buf);
   }
 
   // printf("结束时间：%d",time(0));

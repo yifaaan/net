@@ -4,9 +4,6 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-#include <format>
-#include <iostream>
-
 #include "connection.h"
 #include "epoll.h"
 #include "event_loop.h"
@@ -57,28 +54,3 @@ void Channel::HandleEvent() {
 
 //   Connection* conn = new Connection{loop_, client_sock};
 // }
-
-void Channel::HandleOnMessage() {
-  char buffer[1024]{};
-  // 由于使用非阻塞IO，一次读取buffer大小数据，直到全部的数据读取完毕。
-  while (true) {
-    ssize_t nread = ::read(fd_, buffer, sizeof(buffer));
-    if (nread > 0)  // 成功的读取到了数据。
-    {
-      // 把接收到的报文内容原封不动的发回去。
-      std::cout << std::format(
-          "recv(eventfd={}):{}\n", fd_,
-          std::string_view(buffer, static_cast<size_t>(nread)));
-      ::send(fd_, buffer, static_cast<size_t>(nread), 0);
-    } else if (nread == -1 && errno == EINTR) {
-      // 读取数据的时候被信号中断，继续读取。
-      continue;
-    } else if (nread == -1 && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) {
-      // 全部的数据已读取完毕。
-      break;
-    } else if (nread == 0) {  // 客户端连接已断开。
-      close_callback_();
-      break;
-    }
-  }
-}
