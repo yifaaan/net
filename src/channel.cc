@@ -9,8 +9,6 @@
 
 #include "connection.h"
 #include "epoll.h"
-#include "inet_address.h"
-#include "socket.h"
 #include "event_loop.h"
 
 Channel::Channel(EventLoop* loop, int fd) : loop_{loop}, fd_{fd} {}
@@ -50,18 +48,18 @@ void Channel::HandleEvent() {
   }
 }
 
-void Channel::HandleNewConnection(Socket* server_sock) {
-  sockaddr_in addr{};
-  InetAddress client_addr;
+// void Channel::HandleNewConnection(Socket* server_sock) {
+//   sockaddr_in addr{};
+//   InetAddress client_addr;
 
-  auto client_sock = new Socket{server_sock->Accept(client_addr)};
-  int client_fd = client_sock->fd();
+//   auto client_sock = new Socket{server_sock->Accept(client_addr)};
+//   int client_fd = client_sock->fd();
 
-  std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
-                           client_fd, client_addr.ip(), client_addr.port());
+//   std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
+//                            client_fd, client_addr.ip(), client_addr.port());
 
-  Connection* conn = new Connection{loop_, client_sock};
-}
+//   Connection* conn = new Connection{loop_, client_sock};
+// }
 
 void Channel::HandleOnMessage() {
   char buffer[1024]{};

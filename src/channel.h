@@ -36,7 +36,8 @@ class Channel {
   void HandleEvent();
 
   // 处理客户端新连接事件
-  void HandleNewConnection(Socket* server_sock);
+  // void HandleNewConnection(Socket* server_sock);
+  
   // 处理读写事件
   void HandleOnMessage();
 

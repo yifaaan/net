@@ -12,6 +12,8 @@ class Acceptor {
  public:
   Acceptor(EventLoop* loop, const std::string& ip, uint16_t port);
 
+  // Acceptor处理客户端新连接事件，并创建 Connection类
+  void HandleNewConnection();
  private:
   // Acceptor对应的事件循环，构造时传入
   EventLoop* loop_{};
