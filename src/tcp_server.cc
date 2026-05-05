@@ -33,6 +33,8 @@ void TcpServer::HandleNewConnection(Socket* client_sock) {
   conn->SetOnMessageCallback([this](Connection* conn, std::string& message) {
     OnMessage(conn, message);
   });
+  conn->SetSendCompeleteCallbace(
+      [this](Connection* conn) { SendComplete(conn); });
   std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
                            conn->fd(), conn->ip(), conn->port());
 }
@@ -59,4 +61,9 @@ void TcpServer::OnMessage(Connection* conn, std::string& message) {
   tmp += message;
   // 将数据写入Connection的output_buffer
   conn->Send(tmp.data(), tmp.size());
+}
+
+void TcpServer::SendComplete(Connection* conn) {
+  std::cout << "send complete\n";
+  // ...
 }

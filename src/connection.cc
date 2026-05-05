@@ -82,6 +82,7 @@ void Connection::WriteCallback() {
   // 数据已经发完，需要取消监听可写事件
   if (output_buffer_.size() == 0) {
     client_channel_->DisableWriting();
+    send_complete_callback_(this);
   }
 }
 

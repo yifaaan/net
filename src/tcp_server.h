@@ -28,6 +28,9 @@ class TcpServer {
 
   // 处理客户端的请求报文，在Connection类中回调
   void OnMessage(Connection* conn, std::string& message);
+
+  // 数据发送完成后，在Connection类中回调
+  void SendComplete(Connection* conn);
  private:
   EventLoop loop_;
   std::unique_ptr<Acceptor> acceptor_;

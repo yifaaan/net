@@ -47,6 +47,11 @@ class Connection {
     on_message_callback_ = std::move(cb);
   }
 
+  // 设置将output_buffer中所有数据写入到内核缓冲区后的回调，TcpServer调用
+  void SetSendCompeleteCallbace(std::function<void(Connection*)> cb) {
+    send_complete_callback_ = std::move(cb);
+  }
+
  private:
   // Acceptor对应的事件循环，构造时传入
   EventLoop* loop_{};
@@ -63,4 +68,6 @@ class Connection {
   std::function<void(Connection*)> error_callback_;
   // 收到一个完整客户端报文的回调，TcpServer在创建Connection时需要指定
   std::function<void(Connection*, std::string&)> on_message_callback_;
+  // output_buffer中所有数据写入到内核缓冲区后的回调，TcpServer在创建Connection时需要指定
+  std::function<void(Connection*)> send_complete_callback_;
 };
