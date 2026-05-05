@@ -42,16 +42,13 @@ void EchoServer::HandleError(Connection* conn) {
   std::cout << "connection error\n";
 }
 
-// 处理客户端的请求报文，在Connection类中回调
+// 处理客户端的一条完整 请求报文，在Connection类中回调
 void EchoServer::HandleMessage(Connection* conn, std::string& message) {
   message = "reply:" + message;
 
   // 回应报文
-  int len = message.size();
-  std::string tmp{reinterpret_cast<char*>(&len), sizeof(len)};
-  tmp += message;
   // 将数据写入Connection的output_buffer
-  conn->Send(tmp.data(), tmp.size());
+  conn->Send(message.data(), message.size());
 }
 
 // 数据发送完成后，在Connection类中回调

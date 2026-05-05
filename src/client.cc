@@ -50,9 +50,19 @@ int main(int argc, char* argv[]) {
   }
   for (int ii = 0; ii < 200000; ii++) {
     int len;
-    ::recv(sockfd, &len, sizeof(len), 0);
+    if (::recv(sockfd, &len, sizeof(len), MSG_WAITALL) != sizeof(len)) {
+      printf("recv len failed.\n");
+      break;
+    }
+    if (len <= 0 || len >= static_cast<int>(sizeof(buf))) {
+      printf("invalid body len=%d\n", len);
+      break;
+    }
     ::memset(buf, 0, sizeof(buf));
-    ::recv(sockfd, buf, len, 0);
+    if (::recv(sockfd, buf, len, MSG_WAITALL) != len) {
+      printf("recv body failed.\n");
+      break;
+    }
     printf("%s", buf);
   }
 

@@ -87,6 +87,6 @@ void Connection::WriteCallback() {
 }
 
 void Connection::Send(const char* data, size_t len) {
-  output_buffer_.Append(data, len);  // 将用户数据 保存到发送缓冲区
+  output_buffer_.AppendWithHead(data, len);  // 将用户数据 保存到发送缓冲区
   client_channel_->EnableWriting();  // 注册 写事件
 }

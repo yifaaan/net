@@ -8,7 +8,7 @@ class Buffer {
 
   // 给buffer添加数据
   void Append(const char* data, size_t len);
-
+  void AppendWithHead(const char* data, size_t len);
   size_t size() const { return buf_.size(); }
   const char* data() const { return buf_.data(); }
   void Clear() { buf_.clear(); }
