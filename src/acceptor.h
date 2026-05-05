@@ -12,7 +12,7 @@ class Acceptor {
  public:
   Acceptor(EventLoop* loop, const std::string& ip, uint16_t port);
 
-  // Acceptor处理客户端新连接事件，并创建 Connection类
+  // Acceptor处理客户端新连接事件，由Channel类检测到新客户端连接时回调
   void HandleNewConnection();
 
   void SetNewConnectionCallback(std::function<void(Socket*)> cb) {
@@ -26,6 +26,6 @@ class Acceptor {
   std::unique_ptr<Socket> srv_sock_;
   std::unique_ptr<Channel> accept_channel_;
 
-  // 处理客户端连接的回调，有TcpServer创建Acceptor时设置，调用TcpServer::HandleNewConnection
+  // 处理客户端连接的回调，由TcpServer创建Acceptor时设置，调用TcpServer::HandleNewConnection
   std::function<void(Socket*)> new_connection_callback_;
 };
