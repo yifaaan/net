@@ -37,7 +37,11 @@ int main(int argc, char* argv[]) {
 
   Epoll epoll;
   // 让epoll监视listen_fd的读事件，采用水平触发。
-  auto serv_channel = new Channel{&epoll, listen_fd, true};
+  auto serv_channel = new Channel{&epoll, listen_fd};
+  // server设置读回调，事件发生后 ，处理客户端连接
+  serv_channel->SetReadCallback(
+      [=] { serv_channel->HandleNewConnection(serv_sock); });
+
   serv_channel->EnableReading();
 
   std::vector<Channel*> channels;
@@ -47,7 +51,7 @@ int main(int argc, char* argv[]) {
     channels = epoll.Loop();
 
     for (auto ch : channels) {
-      ch->HandleEvent(serv_sock);
+      ch->HandleEvent();
     }
   }
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 
 class Epoll;
 class Socket;
@@ -9,7 +10,7 @@ class Socket;
 // 包含fd及其事件控制，epoll_wait返回后处理各种事件
 class Channel {
  public:
-  Channel(Epoll* ep, int fd, bool is_listen);
+  Channel(Epoll* ep, int fd);
   ~Channel();
 
   int fd() const { return fd_; }
@@ -31,12 +32,30 @@ class Channel {
   void SetRevents(uint32_t e);
 
   // epoll_wait返回后，执行该函数
-  void HandleEvent(Socket* server_sock);
+  void HandleEvent();
+
+  // 处理客户端新连接事件
+  void HandleNewConnection(Socket* server_sock);
+  // 处理读写事件
+  void HandleOnMessage();
+
+  void SetReadCallback(std::function<void()> cb) {
+    read_callback_ = std::move(cb);
+  }
+
+  void SetWriteCallback(std::function<void()> cb) {
+    write_callback_ = std::move(cb);
+  }
+
  private:
   int fd_{-1};
-  bool is_listen_{};    // listen fd / client fd?
   bool in_epoll_{};     // 已添加到epoll
   Epoll* ep_{};         // 所属的epoll
   uint32_t events_{};   // fd_需要监听的事件
   uint32_t revents_{};  // fd_已发生的事件
+
+  // 读回调，在创建Channel时需要指定
+  std::function<void()> read_callback_;
+  // 写回调，在创建Channel时需要指定
+  std::function<void()> write_callback_;
 };
