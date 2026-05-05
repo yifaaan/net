@@ -5,6 +5,7 @@
 #include "event_loop.h"
 
 class Acceptor;
+class Socket;
 
 class TcpServer {
  public:
@@ -12,6 +13,8 @@ class TcpServer {
   ~TcpServer();
 
   void Start();
+
+  void HandleNewConnection(Socket* client_sock);
 
  private:
   EventLoop loop_;

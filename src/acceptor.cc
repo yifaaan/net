@@ -36,5 +36,7 @@ void Acceptor::HandleNewConnection() {
   std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
                            client_fd, client_addr.ip(), client_addr.port());
 
-  Connection* conn = new Connection{loop_, client_sock};
+  // 调用TcpServer回调，添加connection
+  new_connection_callback_(client_sock);
 }
+
