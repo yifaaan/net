@@ -12,7 +12,7 @@ TcpServer::TcpServer(const std::string& ip, uint16_t port, int thread_num)
     : main_loop_{std::make_unique<EventLoop>()},
       acceptor_{std::make_unique<Acceptor>(main_loop_.get(), ip, port)},
       thread_num_{thread_num},
-      thread_pool_{std::make_unique<ThreadPool>(thread_num_)} {
+      thread_pool_{std::make_unique<ThreadPool>(thread_num_, "IO")} {
   // Acceptor 收到客户连接时，回调TcpServer的函数
   acceptor_->SetNewConnectionCallback(
       [this](Socket* client_sock) { HandleNewConnection(client_sock); });

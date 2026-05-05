@@ -1,12 +1,15 @@
 #include "thread_pool.h"
 
 #include <iostream>
+#include <thread>
 
-ThreadPool::ThreadPool(int thread_num) {
+ThreadPool::ThreadPool(int thread_num, std::string thread_type)
+    : thread_type_{std::move(thread_type)} {
   threads_.reserve(thread_num);
   for (int i = 0; i < thread_num; i++) {
     threads_.emplace_back([this](std::stop_token token) {
-      std::cout << "worker thread id: " << std::this_thread::get_id() << '\n';
+      std::cout << thread_type_ << " thread id=" << std::this_thread::get_id()
+                << '\n';
 
       while (true) {
         std::unique_lock lock{mutex_};
@@ -20,6 +23,8 @@ ThreadPool::ThreadPool(int thread_num) {
 
         lock.unlock();
 
+        std::cout << thread_type_ << " thread id=" << std::this_thread::get_id()
+                  << " executed task" << '\n';
         task();
       }
     });

@@ -7,15 +7,16 @@
 #include <thread>
 #include <vector>
 class ThreadPool {
- 
  public:
-  ThreadPool(int thread_num);
+  ThreadPool(int thread_num, std::string thread_type);
   ~ThreadPool();
-  
+
   void AddTask(std::function<void()> task);
+
  private:
   std::vector<std::jthread> threads_;
   std::queue<std::function<void()>> tasks_;
   std::mutex mutex_;
   std::condition_variable_any cond_;
+  std::string thread_type_;  // IO  / WORK
 };

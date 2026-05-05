@@ -3,7 +3,7 @@
 #include "tcp_server.h"
 class EchoServer {
  public:
-  EchoServer(const std::string& ip, uint16_t port);
+  EchoServer(const std::string& ip, uint16_t port, int thread_num, int work_thread_num = 5);
   ~EchoServer();
 
   void Start();
@@ -27,6 +27,11 @@ class EchoServer {
   // epoll_wait超时后的回调，在EventLoop类中回调
   void HandleEpollTimeout(EventLoop* loop);
 
+
+  // 给 工作线程的任务函数
+  void OnMessage(Connection* conn, std::string& message);
  private:
   TcpServer tcp_server_;
+  int work_thread_num_{};
+  std::unique_ptr<ThreadPool>  thread_pool_;
 };

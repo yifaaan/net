@@ -3,20 +3,23 @@
 #include <iostream>
 #include <thread>
 
-#include "tcp_server.h"
 #include "connection.h"
+#include "tcp_server.h"
+#include "thread_pool.h"
 
-EchoServer::EchoServer(const std::string& ip, uint16_t port)
-    : tcp_server_{ip, port} {
+EchoServer::EchoServer(const std::string& ip, uint16_t port, int thread_num,
+                       int work_thread_num)
+    : tcp_server_{ip, port, thread_num},
+      work_thread_num_{work_thread_num},
+      thread_pool_{std::make_unique<ThreadPool>(work_thread_num_, "WORK")} {
   tcp_server_.SetNewConnectionCallback(
       [this](Connection* conn) { HandleNewConnection(conn); });
   tcp_server_.SetCloseConnectionCallback(
       [this](Connection* conn) { HandleClose(conn); });
   tcp_server_.SetErrorConnectionCallback(
       [this](Connection* conn) { HandleError(conn); });
-  tcp_server_.SetOnMessageCallback([this](Connection* conn, std::string& msg) {
-    HandleMessage(conn, msg);
-  });
+  tcp_server_.SetOnMessageCallback(
+      [this](Connection* conn, std::string& msg) { HandleMessage(conn, msg); });
   tcp_server_.SetSendCompleteCallback(
       [this](Connection* conn) { HandleSendComplete(conn); });
   tcp_server_.SetEpollTimeoutCallback(
@@ -30,7 +33,8 @@ void EchoServer::Start() { tcp_server_.Start(); }
 // 客户端连接时，TcpServer会回调该函数
 void EchoServer::HandleNewConnection(Connection* conn) {
   std::cout << "new connection come in\n";
-  std::cout << "EchoServer::HandleNewConnection() thread id is " << std::this_thread::get_id() << '\n';
+  std::cout << "EchoServer::HandleNewConnection() thread id is "
+            << std::this_thread::get_id() << '\n';
   (void)conn;
 }
 
@@ -46,12 +50,17 @@ void EchoServer::HandleError(Connection* conn) {
 
 // 处理客户端的一条完整 请求报文，在Connection类中回调
 void EchoServer::HandleMessage(Connection* conn, std::string& message) {
-  std::cout << "EchoServer::HandleMessage() thread id is " << std::this_thread::get_id() << '\n';
+  std::cout << "EchoServer::HandleMessage() thread id is "
+            << std::this_thread::get_id() << '\n';
   message = "reply:" + message;
 
   // 回应报文
   // 将数据写入Connection的output_buffer
-  conn->Send(message.data(), message.size());
+  // conn->Send(message.data(), message.size());
+  thread_pool_->AddTask([this, conn, &message] {
+    // std::cout << "thread id is " << std::this_thread::get_id() << "\n";
+    OnMessage(conn, message);
+  });
 }
 
 // 数据发送完成后，在Connection类中回调
@@ -62,4 +71,8 @@ void EchoServer::HandleSendComplete(Connection* conn) {
 // epoll_wait超时后的回调，在EventLoop类中回调
 void EchoServer::HandleEpollTimeout(EventLoop* loop) {
   std::cout << "epoll timeout\n";
+}
+
+void EchoServer::OnMessage(Connection* conn, std::string& message) {
+  conn->Send(message.data(), message.size());
 }

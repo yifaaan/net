@@ -10,6 +10,6 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  EchoServer server{argv[1], static_cast<uint16_t>(std::atoi(argv[2]))};
+  EchoServer server{argv[1], static_cast<uint16_t>(std::atoi(argv[2])), 5};
   server.Start();
 }
