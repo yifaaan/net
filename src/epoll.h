@@ -5,16 +5,23 @@
 #include <array>
 #include <vector>
 
+class Channel;
+
 class Epoll {
  public:
   Epoll();
   ~Epoll();
 
   // 添加fd和监听事件
-  void AddFd(int fd, uint32_t op);
+  // void AddFd(int fd, uint32_t op);
+
+  // 将channel添加或更新到epoll树上
+  void UpdateChannel(Channel* ch);
 
   // epoll_wait，返回就绪事件
-  std::vector<epoll_event> Loop(int timeout = -1);
+  // std::vector<epoll_event> Loop(int timeout = -1);
+
+  std::vector<Channel*> Loop(int timeout = -1);
 
  private:
   static constexpr auto kMaxEvents = 1024;

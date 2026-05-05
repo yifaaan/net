@@ -14,6 +14,7 @@
 #include <iostream>
 #include <string_view>
 
+#include "channel.h"
 #include "epoll.h"
 #include "inet_address.h"
 #include "socket.h"
@@ -36,27 +37,30 @@ int main(int argc, char* argv[]) {
 
   Epoll epoll;
   // 让epoll监视listen_fd的读事件，采用水平触发。
-  epoll.AddFd(listen_fd, EPOLLIN);
+  auto serv_channel = new Channel{&epoll, listen_fd};
+  serv_channel->EnableReading();
 
-  std::vector<epoll_event> revents;
+  std::vector<Channel*> channels;
 
   while (true) {
-    revents = epoll.Loop();
+    // epoll_wait
+    channels = epoll.Loop();
 
-    for (auto ev : revents)  // 遍历epoll返回的数组evs。
-    {
-      const int evfd = ev.data.fd;
-      if (ev.events & EPOLLRDHUP) {
+    for (auto ch : channels) {
+      const int evfd = ch->fd();
+      if (ch->revents() & EPOLLRDHUP) {
         // 对方已关闭，有些系统检测不到，可以使用EPOLLIN，recv()返回0。
         std::cout << std::format("1client(eventfd={}) disconnected.\n", evfd);
         close(evfd);  // 关闭客户端的fd。
-      } else if (ev.events & (EPOLLIN | EPOLLPRI)) {
+      } else if (ch->revents() & (EPOLLIN | EPOLLPRI)) {
         //  普通数据  带外数据
         // 接收缓冲区中有数据可以读。
-        if (evfd == listen_fd) {
+
+        // 接收客户端连接
+        if (ch == serv_channel) {
           sockaddr_in addr{};
           InetAddress client_addr;
-          // 接收客户端连接
+
           auto client_sock = new Socket{serv_sock.Accept(client_addr)};
           int client_fd = client_sock->fd();
 
@@ -65,7 +69,9 @@ int main(int argc, char* argv[]) {
                                    client_addr.port());
 
           // 为新客户端连接准备读事件，并添加到epoll中。
-          epoll.AddFd(client_fd, EPOLLIN | EPOLLET);  // 边缘触发。
+          auto client_ch = new Channel{&epoll, client_fd};
+          client_ch->UseET();  // 边缘触发
+          client_ch->EnableReading();
         } else {
           char buffer[1024];
           // 由于使用非阻塞IO，一次读取buffer大小数据，直到全部的数据读取完毕。
@@ -94,7 +100,7 @@ int main(int argc, char* argv[]) {
             }
           }
         }
-      } else if (ev.events & EPOLLOUT) {
+      } else if (ch->revents() & EPOLLOUT) {
         // 有数据需要写
       } else {  // 其它事件，都视为错误。
         std::cout << std::format("client(eventfd={}) error.\n", evfd);
