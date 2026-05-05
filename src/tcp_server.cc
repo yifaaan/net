@@ -25,6 +25,11 @@ void TcpServer::Start() { loop_.Run(); }
 void TcpServer::HandleNewConnection(Socket* client_sock) {
   Connection* conn = new Connection{&loop_, client_sock};
   conns_[conn->fd()] = conn;
+  // 设置事件发生时的回调
+  conn->SetCloseCallback(
+      [this](Connection* conn) { HandleCloseConnection(conn); });
+  conn->SetErrorCallback(
+      [this](Connection* conn) { HandleErrorConnection(conn); });
 
   std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
                            conn->fd(), conn->ip(), conn->port());
