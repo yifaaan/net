@@ -14,6 +14,7 @@
 #include <iostream>
 #include <string_view>
 
+#include "epoll.h"
 #include "inet_address.h"
 #include "socket.h"
 
@@ -33,41 +34,23 @@ int main(int argc, char* argv[]) {
   serv_sock.Bind(serv_addr);
   serv_sock.Listen();
 
-  int epollfd = epoll_create(1);  // 创建epoll句柄（红黑树）。
+  Epoll epoll;
+  // 让epoll监视listen_fd的读事件，采用水平触发。
+  epoll.AddFd(listen_fd, EPOLLIN);
 
-  // 为服务端的listen_fd准备读事件。
-  struct epoll_event ev;
-  ev.data.fd = listen_fd;
-  ev.events = EPOLLIN;  // 让epoll监视listen_fd的读事件，采用水平触发。
-
-  epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_fd, &ev);
-
-  struct epoll_event evs[10];  // 存放epoll_wait()返回事件的数组。
+  std::vector<epoll_event> revents;
 
   while (true) {
-    int infds = epoll_wait(epollfd, evs, 10, -1);  // 等待监视的fd有事件发生。
+    revents = epoll.Loop();
 
-    // 返回失败。
-    if (infds < 0) {
-      perror("epoll_wait() failed");
-      break;
-    }
-
-    // 超时。
-    if (infds == 0) {
-      std::cout << std::format("epoll_wait() timeout.\n");
-      continue;
-    }
-
-    // 如果infds>0，表示有事件发生的fd的数量。
-    for (int ii = 0; ii < infds; ii++)  // 遍历epoll返回的数组evs。
+    for (auto ev : revents)  // 遍历epoll返回的数组evs。
     {
-      const int evfd = evs[ii].data.fd;
-      if (evs[ii].events & EPOLLRDHUP) {
+      const int evfd = ev.data.fd;
+      if (ev.events & EPOLLRDHUP) {
         // 对方已关闭，有些系统检测不到，可以使用EPOLLIN，recv()返回0。
         std::cout << std::format("1client(eventfd={}) disconnected.\n", evfd);
         close(evfd);  // 关闭客户端的fd。
-      } else if (evs[ii].events & (EPOLLIN | EPOLLPRI)) {
+      } else if (ev.events & (EPOLLIN | EPOLLPRI)) {
         //  普通数据  带外数据
         // 接收缓冲区中有数据可以读。
         if (evfd == listen_fd) {
@@ -82,9 +65,7 @@ int main(int argc, char* argv[]) {
                                    client_addr.port());
 
           // 为新客户端连接准备读事件，并添加到epoll中。
-          ev.data.fd = client_fd;
-          ev.events = EPOLLIN | EPOLLET;  // 边缘触发。
-          epoll_ctl(epollfd, EPOLL_CTL_ADD, client_fd, &ev);
+          epoll.AddFd(client_fd, EPOLLIN | EPOLLET);  // 边缘触发。
         } else {
           char buffer[1024];
           // 由于使用非阻塞IO，一次读取buffer大小数据，直到全部的数据读取完毕。
@@ -106,17 +87,17 @@ int main(int argc, char* argv[]) {
               // 全部的数据已读取完毕。
               break;
             } else if (nread == 0) {  // 客户端连接已断开。
-              std::cout << std::format("2client(eventfd={}) disconnected.\n",
+              std::cout << std::format("client(eventfd={}) disconnected.\n",
                                        evfd);
               close(evfd);  // 关闭客户端的fd。
               break;
             }
           }
         }
-      } else if (evs[ii].events & EPOLLOUT) {
+      } else if (ev.events & EPOLLOUT) {
         // 有数据需要写
       } else {  // 其它事件，都视为错误。
-        std::cout << std::format("3client(eventfd={}) error.\n", evfd);
+        std::cout << std::format("client(eventfd={}) error.\n", evfd);
         close(evfd);  // 关闭客户端的fd。
       }
     }
