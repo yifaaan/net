@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
   printf("connect ok.\n");
   // printf("开始时间：%d",time(0));
 
-  for (int ii = 0; ii < 200000; ii++) {
+  for (int ii = 0; ii < 1; ii++) {
     // 从命令行输入内容。
     ::memset(buf, 0, sizeof(buf));
     ::sprintf(buf, "这是第%d句话\n", ii);
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     ::memcpy(tmp + sizeof(len), buf, len);
     ::send(sockfd, tmp, len + sizeof(len), 0);
   }
-  for (int ii = 0; ii < 200000; ii++) {
+  for (int ii = 0; ii < 1; ii++) {
     int len;
     if (::recv(sockfd, &len, sizeof(len), MSG_WAITALL) != sizeof(len)) {
       printf("recv len failed.\n");
@@ -66,5 +66,6 @@ int main(int argc, char* argv[]) {
     printf("%s", buf);
   }
 
+  sleep(100);
   // printf("结束时间：%d",time(0));
 }

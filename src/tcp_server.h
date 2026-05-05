@@ -10,10 +10,11 @@ class Acceptor;
 class Socket;
 class Connection;
 class EventLoop;
+class ThreadPool;
 
 class TcpServer {
  public:
-  TcpServer(const std::string& ip, uint16_t port);
+  TcpServer(const std::string& ip, uint16_t port, int thread_num = 3);
   ~TcpServer();
 
   void Start();
@@ -66,11 +67,13 @@ class TcpServer {
   
 
  private:
-  EventLoop loop_;
+  std::unique_ptr<EventLoop> main_loop_;
   std::unique_ptr<Acceptor> acceptor_;
   std::unordered_map<int, Connection*> conns_;
-
-
+  int thread_num_; // 从事件循环的个数
+  std::vector<std::unique_ptr<EventLoop>> sub_loops_;
+  std::unique_ptr<ThreadPool> thread_pool_;
+  
 
   // for echo server
   // 回调 EchoServere::HandleNewConnection()

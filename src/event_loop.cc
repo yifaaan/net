@@ -1,5 +1,8 @@
 #include "event_loop.h"
 
+#include <iostream>
+#include <thread>
+
 #include "channel.h"
 #include "epoll.h"
 
@@ -10,6 +13,8 @@ EventLoop::~EventLoop() = default;
 void EventLoop::UpdateChannel(Channel* ch) { epoll_->UpdateChannel(ch); }
 
 void EventLoop::Run() {
+  // std::cout << "EventLoop::Run() thread is " << std::this_thread::get_id()
+  //           << "\n";
   while (true) {
     // epoll_wait
     auto channels = epoll_->Loop(5000);

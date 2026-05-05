@@ -1,6 +1,7 @@
 #include "echo_server.h"
 
 #include <iostream>
+#include <thread>
 
 #include "tcp_server.h"
 #include "connection.h"
@@ -29,6 +30,7 @@ void EchoServer::Start() { tcp_server_.Start(); }
 // 客户端连接时，TcpServer会回调该函数
 void EchoServer::HandleNewConnection(Connection* conn) {
   std::cout << "new connection come in\n";
+  std::cout << "EchoServer::HandleNewConnection() thread id is " << std::this_thread::get_id() << '\n';
   (void)conn;
 }
 
@@ -44,6 +46,7 @@ void EchoServer::HandleError(Connection* conn) {
 
 // 处理客户端的一条完整 请求报文，在Connection类中回调
 void EchoServer::HandleMessage(Connection* conn, std::string& message) {
+  std::cout << "EchoServer::HandleMessage() thread id is " << std::this_thread::get_id() << '\n';
   message = "reply:" + message;
 
   // 回应报文

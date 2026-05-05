@@ -6,16 +6,32 @@
 #include "channel.h"
 #include "connection.h"
 #include "socket.h"
+#include "thread_pool.h"
 
-TcpServer::TcpServer(const std::string& ip, uint16_t port)
-    : acceptor_{std::make_unique<Acceptor>(&loop_, ip, port)} {
+TcpServer::TcpServer(const std::string& ip, uint16_t port, int thread_num)
+    : main_loop_{std::make_unique<EventLoop>()},
+      acceptor_{std::make_unique<Acceptor>(main_loop_.get(), ip, port)},
+      thread_num_{thread_num},
+      thread_pool_{std::make_unique<ThreadPool>(thread_num_)} {
   // Acceptor 收到客户连接时，回调TcpServer的函数
   acceptor_->SetNewConnectionCallback(
       [this](Socket* client_sock) { HandleNewConnection(client_sock); });
 
   // 设置epoll_wait超时回调
-  loop_.SetEpollTimeoutCallback(
+  main_loop_->SetEpollTimeoutCallback(
       [this](EventLoop* loop) { EpollTimeout(loop); });
+
+  // 创建从事件循环
+  sub_loops_.reserve(thread_num_);
+  for (int i = 0; i < thread_num_; i++) {
+    sub_loops_.emplace_back(std::make_unique<EventLoop>());
+    auto lp = sub_loops_[i].get();
+    // 超时回调
+    lp->SetEpollTimeoutCallback(
+        [this](EventLoop* loop) { EpollTimeout(loop); });
+    // 添加线程池任务
+    thread_pool_->AddTask([lp] { lp->Run(); });
+  }
 }
 
 TcpServer::~TcpServer() {
@@ -24,10 +40,12 @@ TcpServer::~TcpServer() {
   }
 }
 
-void TcpServer::Start() { loop_.Run(); }
+void TcpServer::Start() { main_loop_->Run(); }
 
 void TcpServer::HandleNewConnection(Socket* client_sock) {
-  Connection* conn = new Connection{&loop_, client_sock};
+  // TODO:设置到从事件循环中
+  int id = client_sock->fd() % thread_num_;
+  Connection* conn = new Connection{sub_loops_[id].get(), client_sock};
   conns_[conn->fd()] = conn;
   // 设置事件发生时的回调
   conn->SetCloseCallback(
