@@ -19,8 +19,18 @@ void Channel::EnableReading() {
   loop_->UpdateChannel(this);
 }
 
+void Channel::DisableReading() {
+  events_ &= ~EPOLLIN;
+  loop_->UpdateChannel(this);
+}
+
 void Channel::EnableWriting() {
   events_ |= EPOLLOUT;
+  loop_->UpdateChannel(this);
+}
+
+void Channel::DisableWriting() {
+  events_ &= ~EPOLLOUT;
   loop_->UpdateChannel(this);
 }
 
@@ -36,7 +46,9 @@ void Channel::HandleEvent() {
     // 接收缓冲区中有数据可以读。
     read_callback_();
   } else if (revents_ & EPOLLOUT) {
-    // 有数据需要写
+    // 有数据需要写, 回调Connection的写事件函数,
+    // 将Connection中的output_buffer写入socket
+    write_callback_();
   } else {  // 其它事件，都视为错误。
     error_callback_();
   }

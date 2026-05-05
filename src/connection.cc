@@ -12,13 +12,15 @@ Connection::Connection(EventLoop* loop, Socket* client_sock) : loop_{loop} {
 
   // 设置客户端的读回调
   client_channel_->SetReadCallback([this] { HandleOnMessage(); });
+  // 设置写回调
+  client_channel_->SetWriteCallback([this] { WriteCallback(); });
   // 设置客户端连接断开的回调
   client_channel_->SetCloseCallback([this] { CloseCallback(); });
   //  设置客户端连接错误的回调
   client_channel_->SetErrorCallback([this] { ErrorCallback(); });
 
   // 设置边缘触发
-  client_channel_->UseET();
+  // client_channel_->UseET();
   // 为新客户端连接准备读事件，并添加到epoll中。
   client_channel_->EnableReading();
 }
@@ -69,4 +71,21 @@ void Connection::HandleOnMessage() {
       break;
     }
   }
+}
+
+void Connection::WriteCallback() {
+  // 尝试把output_buffer数据全部发送
+  int written = ::send(fd(), output_buffer_.data(), output_buffer_.size(), 0);
+  if (written > 0) {
+    output_buffer_.Erase(0, written);
+  }
+  // 数据已经发完，需要取消监听可写事件
+  if (output_buffer_.size() == 0) {
+    client_channel_->DisableWriting();
+  }
+}
+
+void Connection::Send(const char* data, size_t len) {
+  output_buffer_.Append(data, len);  // 将用户数据 保存到发送缓冲区
+  client_channel_->EnableWriting();  // 注册 写事件
 }

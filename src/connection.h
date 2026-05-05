@@ -20,14 +20,19 @@ class Connection {
   uint16_t port() const;
   const std::string& ip() const;
 
+  void Send(const char* data, size_t len);
+
   // Tcp连接断开的回调，由Channel类检测到断开后 回调
   void CloseCallback();
 
   // Tcp连接错误的 回调，由Channel类检测到错误后 回调
   void ErrorCallback();
 
-  // 处理读写事件
+  // 处理读事件，Channel检测到可读后，回调
   void HandleOnMessage();
+
+  // 处理写事件, Channel检测到可写后，回调
+  void WriteCallback();
 
   // 设置断开连接的回调，TcpServer调用
   void SetCloseCallback(std::function<void(Connection*)> cb) {

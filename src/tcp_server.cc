@@ -57,6 +57,6 @@ void TcpServer::OnMessage(Connection* conn, std::string& message) {
   int len = message.size();
   std::string tmp{reinterpret_cast<char*>(&len), sizeof(len)};
   tmp += message;
-  // Send
-  ::send(conn->fd(), tmp.data(), tmp.size(), 0);
+  // 将数据写入Connection的output_buffer
+  conn->Send(tmp.data(), tmp.size());
 }

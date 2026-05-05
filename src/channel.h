@@ -24,9 +24,12 @@ class Channel {
 
   // 监听读事件，并添加到对应的epoll
   void EnableReading();
+  // 取消读事件，并添加到对应的epoll
+  void DisableReading();
   // 监听写事件，并添加到对应的epoll
   void EnableWriting();
-
+  // 取消写事件，并添加到对应的epoll
+  void DisableWriting();
   // 表示已添加到epoll
   void SetInEpoll();
 
