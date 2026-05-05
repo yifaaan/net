@@ -8,6 +8,7 @@
 class Acceptor;
 class Socket;
 class Connection;
+class EventLoop;
 
 class TcpServer {
  public:
@@ -31,6 +32,9 @@ class TcpServer {
 
   // 数据发送完成后，在Connection类中回调
   void SendComplete(Connection* conn);
+
+  // epoll_wait超时后的回调，由EventLoop调用
+  void EpollTimeout(EventLoop* loop);
  private:
   EventLoop loop_;
   std::unique_ptr<Acceptor> acceptor_;

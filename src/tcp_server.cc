@@ -12,6 +12,11 @@ TcpServer::TcpServer(const std::string& ip, uint16_t port)
   // Acceptor 收到客户连接时，回调TcpServer的函数
   acceptor_->SetNewConnectionCallback(
       [this](Socket* client_sock) { HandleNewConnection(client_sock); });
+
+  // 设置epoll_wait超时回调
+  loop_.SetEpollTimeoutCallback([this](EventLoop* loop) {
+    EpollTimeout(loop);
+  });
 }
 
 TcpServer::~TcpServer() {
@@ -65,5 +70,10 @@ void TcpServer::OnMessage(Connection* conn, std::string& message) {
 
 void TcpServer::SendComplete(Connection* conn) {
   std::cout << "send complete\n";
+  // ...
+}
+
+void TcpServer::EpollTimeout(EventLoop* loop) {
+  std::cout << "epoll_wait() timeout\n";
   // ...
 }

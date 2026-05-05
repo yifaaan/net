@@ -14,6 +14,11 @@ void EventLoop::Run() {
     // epoll_wait
     auto channels = epoll_->Loop();
 
+    // 如果 channels为空，表示epoll_wait超时，回调TcpServer的超时函数
+    if (channels.empty()) {
+      epoll_timeout_callback_(this);
+    }
+    
     for (auto ch : channels) {
       ch->HandleEvent();
     }
