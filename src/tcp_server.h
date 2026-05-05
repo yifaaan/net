@@ -16,7 +16,15 @@ class TcpServer {
 
   void Start();
 
+  // 客户端连接时，Acceptor会回调该函数
   void HandleNewConnection(Socket* client_sock);
+
+
+  // 关闭客户端的连接，在Connection中回调
+  void HandleCloseConnection(Connection* conn);
+
+  // 处理客户端连接错误，在Connection中回调
+  void HandleErrorConnection(Connection* conn);
 
  private:
   EventLoop loop_;

@@ -26,6 +26,6 @@ class Acceptor {
   std::unique_ptr<Socket> srv_sock_;
   std::unique_ptr<Channel> accept_channel_;
 
-  // 处理客户端连接，TcpServer::HandleNewConnection
+  // 处理客户端连接的回调，有TcpServer创建Acceptor时设置，调用TcpServer::HandleNewConnection
   std::function<void(Socket*)> new_connection_callback_;
 };

@@ -15,7 +15,7 @@ Connection::Connection(EventLoop* loop, Socket* client_sock) : loop_{loop} {
   // 设置客户端连接断开的回调
   client_channel_->SetCloseCallback([this] { CloseCallback(); });
   //  设置客户端连接错误的回调
-  client_channel_->SetErrorCallback([this] { ErrorCcallback(); });
+  client_channel_->SetErrorCallback([this] { ErrorCallback(); });
 
   // 设置边缘触发
   client_channel_->UseET();
@@ -29,13 +29,6 @@ int Connection::fd() const { return client_sock_->fd(); }
 uint16_t Connection::port() const { return client_sock_->port(); }
 const std::string& Connection::ip() const { return client_sock_->ip(); }
 
-void Connection::CloseCallback() {
-  // 对方已关闭，有些系统检测不到，可以使用EPOLLIN，recv()返回0。
-  std::cout << std::format("1client(eventfd={}) disconnected.\n", fd());
-  ::close(fd());  // 关闭客户端的fd。
-}
+void Connection::CloseCallback() { close_callback_(this); }
 
-void Connection::ErrorCcallback() {
-  std::cout << std::format("client(eventfd={}) error.\n", fd());
-  ::close(fd());  // 关闭客户端的fd。
-}
+void Connection::ErrorCallback() { error_callback_(this); }
