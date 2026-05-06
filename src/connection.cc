@@ -6,8 +6,8 @@
 #include "channel.h"
 #include "socket.h"
 
-Connection::Connection(EventLoop* loop, Socket* client_sock) : loop_{loop} {
-  client_sock_.reset(client_sock);
+Connection::Connection(EventLoop* loop, std::unique_ptr<Socket> client_sock)
+    : loop_{loop}, client_sock_{std::move(client_sock)} {
   client_channel_ = std::make_unique<Channel>(loop_, client_sock_->fd());
 
   // 设置客户端的读回调

@@ -6,31 +6,29 @@
 #include "socket.h"
 
 Acceptor::Acceptor(EventLoop* loop, const std::string& ip, uint16_t port)
-    : loop_{loop} {
+    : loop_{loop},
+      srv_sock_{CreateNonBlocking()},
+      accept_channel_{loop_, srv_sock_.fd()} {
   InetAddress serv_addr(ip, port);
-  // 创建服务端用于监听的listenfd。
-  int listen_fd = CreateNonBlocking();
-  srv_sock_ = std::make_unique<Socket>(listen_fd);
-  srv_sock_->SetNodelay(true);
-  srv_sock_->SetReUseAddr(true);
-  srv_sock_->Bind(serv_addr);
-  srv_sock_->Listen();
 
-  accept_channel_ = std::make_unique<Channel>(loop_, listen_fd);
+  srv_sock_.SetNodelay(true);
+  srv_sock_.SetReUseAddr(true);
+  srv_sock_.Bind(serv_addr);
+  srv_sock_.Listen();
 
   // server设置读回调，事件发生后 ，处理客户端连接
-  accept_channel_->SetReadCallback([this] { HandleNewConnection(); });
+  accept_channel_.SetReadCallback([this] { HandleNewConnection(); });
   // 让epoll监视listen_fd的读事件，采用水平触发。
-  accept_channel_->EnableReading();
+  accept_channel_.EnableReading();
 }
 
 void Acceptor::HandleNewConnection() {
   sockaddr_in addr{};
   InetAddress client_addr;
 
-  auto client_sock = new Socket{srv_sock_->Accept(client_addr)};
+  auto client_sock = std::make_unique<Socket>(srv_sock_.Accept(client_addr));
   int client_fd = client_sock->fd();
   client_sock->SetIpPort(client_addr.ip(), client_addr.port());
   // 调用TcpServer回调，添加connection
-  new_connection_callback_(client_sock);
+  new_connection_callback_(std::move(client_sock));
 }

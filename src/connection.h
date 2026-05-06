@@ -14,7 +14,7 @@ class Channel;
 class Connection : public std::enable_shared_from_this<Connection> {
  public:
   using Ptr = std::shared_ptr<Connection>;
-  Connection(EventLoop* loop, Socket* client_sock);
+  Connection(EventLoop* loop, std::unique_ptr<Socket> client_sock);
   ~Connection();
 
   int fd() const;

@@ -15,7 +15,7 @@ TcpServer::TcpServer(const std::string& ip, uint16_t port, int thread_num)
       thread_pool_{std::make_unique<ThreadPool>(thread_num_, "IO")} {
   // Acceptor 收到客户连接时，回调TcpServer的函数
   acceptor_->SetNewConnectionCallback(
-      [this](Socket* client_sock) { HandleNewConnection(client_sock); });
+      [this](std::unique_ptr<Socket> client_sock) { HandleNewConnection(std::move(client_sock)); });
 
   // 设置epoll_wait超时回调
   main_loop_->SetEpollTimeoutCallback(
@@ -38,10 +38,10 @@ TcpServer::~TcpServer() = default;
 
 void TcpServer::Start() { main_loop_->Run(); }
 
-void TcpServer::HandleNewConnection(Socket* client_sock) {
+void TcpServer::HandleNewConnection(std::unique_ptr<Socket> client_sock) {
   // TODO:设置到从事件循环中
   int id = client_sock->fd() % thread_num_;
-  auto conn = std::make_shared<Connection>(sub_loops_[id].get(), client_sock);
+  auto conn = std::make_shared<Connection>(sub_loops_[id].get(), std::move(client_sock));
   conns_[conn->fd()] = conn;
   // 设置事件发生时的回调
   conn->SetCloseCallback(
