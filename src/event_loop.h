@@ -1,6 +1,8 @@
 #pragma once
 
 #include <unistd.h>
+#include <sys/timerfd.h>
+
 #include <functional>
 #include <mutex>
 #include <queue>
@@ -14,7 +16,7 @@ class Channel;
 // 事件循环，while总调用epoll_wait
 class EventLoop {
  public:
-  EventLoop();
+  EventLoop(bool is_main_loop);
   ~EventLoop();
 
   Epoll* epoll() { return &epoll_; }
@@ -33,6 +35,7 @@ class EventLoop {
   void Wakeup();
 
   void HandleWakeup();
+  void HandleTimer();
 
   // 判断当前线程是否是运行事件循环的线程
   bool IsInLoopThread() const {
@@ -50,6 +53,10 @@ class EventLoop {
   int wakeup_fd_{-1};
   Channel wakeup_channel_;
   std::thread::id thread_id_;
+
+  int timerfd_{-1};
+  Channel timer_channel_;
+  bool is_main_loop_{};
 
   std::queue<std::function<void()>> tasks_;
   std::mutex mutex_;

@@ -8,7 +8,7 @@
 #include "thread_pool.h"
 
 TcpServer::TcpServer(const std::string& ip, uint16_t port, int thread_num)
-    : main_loop_{std::make_unique<EventLoop>()},
+    : main_loop_{std::make_unique<EventLoop>(true)},
       acceptor_{std::make_unique<Acceptor>(main_loop_.get(), ip, port)},
       thread_num_{thread_num},
       thread_pool_{std::make_unique<ThreadPool>(thread_num_, "IO")} {
@@ -23,7 +23,7 @@ TcpServer::TcpServer(const std::string& ip, uint16_t port, int thread_num)
   // 创建从事件循环
   sub_loops_.reserve(thread_num_);
   for (int i = 0; i < thread_num_; i++) {
-    sub_loops_.emplace_back(std::make_unique<EventLoop>());
+    sub_loops_.emplace_back(std::make_unique<EventLoop>(false));
     auto lp = sub_loops_[i].get();
     // 超时回调
     lp->SetEpollTimeoutCallback(

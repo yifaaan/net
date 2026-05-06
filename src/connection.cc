@@ -68,16 +68,18 @@ void Connection::HandleOnMessage() {
                             static_cast<size_t>(len)};
         input_buffer_.Erase(0, sizeof(len) + len);
 
-        // Calculate...
-        spdlog::info("message (eventfd={}):{}", fd(), message);
+        spdlog::info(
+            "component=connection event=message_ready fd={} bytes={} "
+            "message={}",
+            fd(), len, message);
 
+        last_active_time = Clock::now();
         on_message_callback_(shared_from_this(), message);
       }
       break;
     } else if (nread == 0) {  // 客户端发FIN，关闭了写端，继续为0，连接已断开。
-      spdlog::info(
-          "Connection::HandleOnMessage() client(fd={}) nread=0, disconnected.",
-          fd());
+      spdlog::info("component=connection event=peer_closed fd={} nread=0",
+                   fd());
       close_callback_(shared_from_this());
       break;
     }
@@ -98,6 +100,8 @@ void Connection::WriteCallback() {
 }
 
 void Connection::Send(const char* data, size_t len) {
+  spdlog::info("component={} event={}, send_bytes={}", "connection",
+               "send_message", len);
   if (loop_->IsInLoopThread()) {
     // 是IO线程，直接发送
     SendInLoop(data, len);

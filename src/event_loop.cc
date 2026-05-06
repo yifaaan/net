@@ -1,17 +1,47 @@
 #include "event_loop.h"
 
+#include <fcntl.h>
+#include <spdlog/spdlog.h>
 #include <sys/eventfd.h>
+#include <sys/time.h>
+#include <sys/timerfd.h>
+
+#include <ctime>
 
 #include "channel.h"
 #include "epoll.h"
 
-EventLoop::EventLoop()
+namespace {
+int CreateTimerFd(int second = 5) {
+  int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+  if (fd < 0) {
+    std::exit(-1);
+  }
+  itimerspec timeout{};
+  timeout.it_value.tv_sec = second;
+  timeout.it_interval.tv_sec = second;
+  if (timerfd_settime(fd, 0, &timeout, nullptr) < 0) {
+    ::close(fd);
+    std::exit(-1);
+  }
+  return fd;
+}
+}  // namespace
+
+EventLoop::EventLoop(bool is_main_loop)
     : wakeup_fd_{::eventfd(0, EFD_NONBLOCK)},
-      wakeup_channel_{this, wakeup_fd_} {
+      wakeup_channel_{this, wakeup_fd_},
+      timerfd_{CreateTimerFd()},
+      timer_channel_{this, timerfd_},
+      is_main_loop_{is_main_loop} {
   wakeup_channel_.SetReadCallback([this] { HandleWakeup(); });
   // 将eventfd加入 epoll，等待唤醒
   wakeup_channel_.UseET();
-  wakeup_channel_.DisableReading();
+  wakeup_channel_.EnableReading();
+
+  timer_channel_.SetReadCallback([this] { HandleTimer(); });
+  timer_channel_.UseET();
+  timer_channel_.EnableReading();
 }
 
 EventLoop::~EventLoop() = default;
@@ -30,6 +60,13 @@ void EventLoop::HandleWakeup() {
   ::read(wakeup_fd_, &one, sizeof(one));  // 必须读取，否则在LT模式下会一直触发
 
   DoPendingTasks();
+}
+
+void EventLoop::HandleTimer() {
+  uint64_t expired = 0;
+  ::read(timerfd_, &expired, sizeof(expired));
+  spdlog::info("component={}_event_loop event=timerfd",
+               is_main_loop_ ? "main" : "sub");
 }
 
 void EventLoop::Run() {

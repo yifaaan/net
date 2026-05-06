@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -14,6 +15,8 @@ class Channel;
 class Connection : public std::enable_shared_from_this<Connection> {
  public:
   using Ptr = std::shared_ptr<Connection>;
+  using Clock = std::chrono::steady_clock;
+
   Connection(EventLoop* loop, std::unique_ptr<Socket> client_sock);
   ~Connection();
 
@@ -66,6 +69,8 @@ class Connection : public std::enable_shared_from_this<Connection> {
 
   Buffer input_buffer_;
   Buffer output_buffer_;
+
+  Clock::time_point last_active_time{Clock::now()};
 
   // 客户端断开连接的回调，TcpServer在创建Connection时需要指定
   std::function<void(Ptr)> close_callback_;
