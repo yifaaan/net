@@ -3,6 +3,7 @@ set_version("0.1.0")
 
 set_languages("c++20")
 add_rules("mode.debug", "mode.release")
+add_rules("plugin.compile_commands.autoupdate", {outputdir = ".", lsp = "clangd"})
 
 add_requires("spdlog v1.16.0", {configs = {header_only = true}})
 

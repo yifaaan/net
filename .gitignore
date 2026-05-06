@@ -2,4 +2,5 @@ tmp/
 .cache/
 build/
 .xmake/
+compile_commands.json
 docs/
