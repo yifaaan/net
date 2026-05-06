@@ -1,7 +1,8 @@
 #include "connection.h"
 
+#include <cerrno>
 #include <cstring>
-#include <format>
+#include <spdlog/spdlog.h>
 
 #include "channel.h"
 #include "event_loop.h"
@@ -68,15 +69,14 @@ void Connection::HandleOnMessage() {
         input_buffer_.Erase(0, sizeof(len) + len);
 
         // Calculate...
-        std::cout << std::format("message (eventfd={}):{}", fd(), message);
+        spdlog::info("message (eventfd={}):{}", fd(), message);
 
         on_message_callback_(shared_from_this(), message);
       }
       break;
     } else if (nread == 0) {  // 客户端发FIN，关闭了写端，继续为0，连接已断开。
-      std::cout << std::format(
-          "Connection::HandleOnMessage() client(fd={}) nread=0, "
-          "disconnected.\n",
+      spdlog::info(
+          "Connection::HandleOnMessage() client(fd={}) nread=0, disconnected.",
           fd());
       close_callback_(shared_from_this());
       break;

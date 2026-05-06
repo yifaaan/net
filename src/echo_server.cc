@@ -1,7 +1,7 @@
 #include "echo_server.h"
 
-#include <format>
-#include <iostream>
+#include <spdlog/fmt/ostr.h>
+#include <spdlog/spdlog.h>
 #include <thread>
 
 #include "connection.h"
@@ -35,25 +35,25 @@ void EchoServer::Start() { tcp_server_.Start(); }
 
 // 客户端连接时，TcpServer会回调该函数
 void EchoServer::HandleNewConnection(Connection::Ptr conn) {
-  std::cout << "EchoServer::HandleNewConnection() client(fd={}) connected.\n",
-      conn->fd();
+  spdlog::info("EchoServer::HandleNewConnection() client(fd={}) connected.",
+               conn->fd());
 }
 
 // 关闭客户端的连接，在Connection中回调
 void EchoServer::HandleClose(Connection::Ptr conn) {
-  std::cout << "EchoServer::HandleClose() client(fd={}) disconnected.\n",
-      conn->fd();
+  spdlog::info("EchoServer::HandleClose() client(fd={}) disconnected.",
+               conn->fd());
 }
 
 // 处理客户端连接错误，在Connection中回调
 void EchoServer::HandleError(Connection::Ptr conn) {
-  std::cout << "connection error\n";
+  spdlog::error("connection error");
 }
 
 // 处理客户端的一条完整 请求报文，在Connection类中回调
 void EchoServer::HandleMessage(Connection::Ptr conn, std::string& message) {
-  std::cout << "EchoServer::HandleMessage() thread id is "
-            << std::this_thread::get_id() << '\n';
+  spdlog::info("EchoServer::HandleMessage() thread id is {}",
+               spdlog::fmt_lib::streamed(std::this_thread::get_id()));
   message = "reply:" + message;
 
   std::weak_ptr<Connection> weak_conn = conn;
@@ -63,21 +63,22 @@ void EchoServer::HandleMessage(Connection::Ptr conn, std::string& message) {
   }
 
   thread_pool_->AddTask([this, weak_conn, message] {  //  发给worker线程
-    // std::cout << "thread id is " << std::this_thread::get_id() << "\n";
+    // spdlog::info("thread id is {}",
+    //              spdlog::fmt_lib::streamed(std::this_thread::get_id()));
     OnMessage(weak_conn, message);
   });
 }
 
 // 数据发送完成后，在Connection类中回调
 void EchoServer::HandleSendComplete(Connection::Ptr conn) {
-  std::cout << std::format(
-      "EchoServer::HandleSendComplete() client(fd={}) message send complete.\n",
+  spdlog::info(
+      "EchoServer::HandleSendComplete() client(fd={}) message send complete.",
       conn->fd());
 }
 
 // epoll_wait超时后的回调，在EventLoop类中回调
 void EchoServer::HandleEpollTimeout(EventLoop* loop) {
-  std::cout << "epoll timeout\n";
+  spdlog::info("epoll timeout");
 }
 
 void EchoServer::OnMessage(std::weak_ptr<Connection> conn,

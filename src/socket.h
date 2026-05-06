@@ -5,7 +5,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include <iostream>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
+#include <spdlog/spdlog.h>
 
 #include "inet_address.h"
 
@@ -49,7 +52,7 @@ class Socket {
 
   void Bind(const InetAddress& addr) {
     if (::bind(fd_, addr.addr(), sizeof(sockaddr)) < 0) {
-      std::cerr << "bind() failed";
+      spdlog::error("bind() failed: {}", std::strerror(errno));
       std::exit(-1);
     }
     SetIpPort(addr.ip(), addr.port());
@@ -57,7 +60,7 @@ class Socket {
 
   void Listen(int n = 128) {
     if (::listen(fd_, n) < 0) {
-      std::cerr << "listen failed";
+      spdlog::error("listen failed: {}", std::strerror(errno));
       std::exit(-1);
     }
   }
@@ -81,7 +84,7 @@ class Socket {
 inline int CreateNonBlocking() {
   int listen_fd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
   if (listen_fd < 0) {
-    std::cout << "socket() failed";
+    spdlog::error("socket() failed: {}", std::strerror(errno));
     std::exit(-1);
   }
   return listen_fd;

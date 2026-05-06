@@ -1,10 +1,11 @@
 #include <arpa/inet.h>
+#include <cerrno>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
-#include <iostream>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -105,7 +106,7 @@ public:
         std::ifstream fin(name, std::ios::binary);
         if (!fin.is_open())
         {
-            std::cout << "打开文件: " << name << " 失败\n";
+            spdlog::error("打开文件: {} 失败", name);
             return false;
         }
         int to_read = 0;
@@ -140,14 +141,15 @@ int main(int argc, char** argv)
 {
     if (argc != 5)
     {
-        std::cout << "Using:./client 服务端的IP 服务端的端口 文件名 大小(Byte)\nExample:./client 192.168.101.138 5005 a.txt 20\n\n";
+        spdlog::error("Using:./client 服务端的IP 服务端的端口 文件名 大小(Byte)");
+        spdlog::error("Example:./client 192.168.101.138 5005 a.txt 20");
         return -1;
     }
 
     TcpClient tcp_client;
     if (tcp_client.Connect(argv[1], ::atoi(argv[2])) == false) // 向服务端发起连接请求。
     {
-        perror("connect()");
+        spdlog::error("connect() failed: {}", std::strerror(errno));
         return -1;
     }
 
@@ -165,31 +167,31 @@ int main(int argc, char** argv)
     FileInfo file_info{ .file_size = ::atoi(argv[4]) };
     ::strcpy(file_info.name, argv[3]);
     tcp_client.Send(&file_info, sizeof(file_info));
-    std::cout << "文件信息发送成功" << std::endl;
+    spdlog::info("文件信息发送成功");
 
     std::string buffer;
     if (!tcp_client.Recv(buffer, 2))
     {
-        ::perror("Recv");
+        spdlog::error("Recv failed: {}", std::strerror(errno));
         return -1;
     }
     if (buffer != "ok")
     {
-        std::cout << "服务端没有确认回复\n";
+        spdlog::error("服务端没有确认回复");
         return -1;
     }
     tcp_client.SendFile(file_info.name, file_info.file_size);
 
     if (!tcp_client.Recv(buffer, 2))
     {
-        ::perror("Recv");
+        spdlog::error("Recv failed: {}", std::strerror(errno));
         return -1;
     }
     if (buffer != "ok")
     {
-        std::cout << "服务端没有确认回复\n";
+        spdlog::error("服务端没有确认回复");
         return -1;
     }
-    std::cout << "文件发送成功\n";
+    spdlog::info("文件发送成功");
 
 }

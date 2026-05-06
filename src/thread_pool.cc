@@ -1,6 +1,7 @@
 #include "thread_pool.h"
 
-#include <iostream>
+#include <spdlog/fmt/ostr.h>
+#include <spdlog/spdlog.h>
 #include <thread>
 
 ThreadPool::ThreadPool(int thread_num, std::string thread_type)
@@ -8,8 +9,8 @@ ThreadPool::ThreadPool(int thread_num, std::string thread_type)
   threads_.reserve(thread_num);
   for (int i = 0; i < thread_num; i++) {
     threads_.emplace_back([this](std::stop_token token) {
-      std::cout << thread_type_ << " thread id=" << std::this_thread::get_id()
-                << '\n';
+      spdlog::info("{} thread id={}", thread_type_,
+                   spdlog::fmt_lib::streamed(std::this_thread::get_id()));
 
       while (true) {
         std::unique_lock lock{mutex_};
@@ -23,8 +24,8 @@ ThreadPool::ThreadPool(int thread_num, std::string thread_type)
 
         lock.unlock();
 
-        std::cout << thread_type_ << " thread id=" << std::this_thread::get_id()
-                  << " executed task" << '\n';
+        spdlog::info("{} thread id={} executed task", thread_type_,
+                     spdlog::fmt_lib::streamed(std::this_thread::get_id()));
         task();
       }
     });

@@ -1,12 +1,13 @@
-#include <format>
-#include <iostream>
+#include <cstdlib>
+
+#include <spdlog/spdlog.h>
 
 #include "echo_server.h"
 
 int main(int argc, char* argv[]) {
   if (argc != 3) {
-    std::cout << std::format("usage: ./tcpepoll ip port\n");
-    std::cout << std::format("example: ./tcpepoll 192.168.150.128 5085\n\n");
+    spdlog::error("usage: ./tcpepoll ip port");
+    spdlog::error("example: ./tcpepoll 192.168.150.128 5085");
     return -1;
   }
 

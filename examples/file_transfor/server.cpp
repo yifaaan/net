@@ -1,14 +1,14 @@
 #include <arpa/inet.h>
+#include <cerrno>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
-#include <iostream>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <format>
 
 class TcpServer
 {
@@ -134,7 +134,7 @@ public:
         fout.open(name, std::ios::binary);
         if (!fout.is_open())
         {
-            std::cout << "打开文件: " << name << " 失败\n";
+            spdlog::error("打开文件: {} 失败", name);
             return false;
         }
         int readed = 0;
@@ -172,15 +172,15 @@ int main(int argc, char** argv)
     TcpServer tcp_server;
     if (!tcp_server.Init(8080))
     {
-        ::perror("Init  server");
+        spdlog::error("Init server failed: {}", std::strerror(errno));
         return -1;
     }
     if (!tcp_server.Accept())
     {
-        ::perror("Accept");
+        spdlog::error("Accept failed: {}", std::strerror(errno));
         return -1;
     }
-    std::cout << "客户端已连接\n";
+    spdlog::info("客户端已连接");
 
     // 接收文件
     // 1.文件名+文件大小
@@ -194,14 +194,14 @@ int main(int argc, char** argv)
     };
     FileInfo file_info{};
     tcp_server.Recv(&file_info, sizeof(file_info));
-    std::cout << std::format("文件信息: {}, {}-bytes", file_info.name, file_info.file_size) << std::endl;
+    spdlog::info("文件信息: {}, {}-bytes", file_info.name, file_info.file_size);
     tcp_server.Send("ok");
 
     if (!tcp_server.RecvFile("xxx", file_info.file_size))
     {
-        std::cout << "接收 文件内容失败\n";
+        spdlog::error("接收文件内容失败");
         return -1;
     }
-    std::cout << "接收文件内容成功\n";
+    spdlog::info("接收文件内容成功");
     tcp_server.Send("ok");
 }

@@ -4,7 +4,6 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-#include <iostream>
 #include <spdlog/spdlog.h>
 
 #include "connection.h"
@@ -67,18 +66,17 @@ void Channel::HandleEvent() {
     // remove
     close_callback_();
   } else {  // 其它事件，都视为错误。
-    spdlog::info("Channel::HandleEvent() client(fd={}) error.", fd());
+    spdlog::error("Channel::HandleEvent() client(fd={}) error.", fd());
 
     error_callback_();
   }
 
   // if (revents_ & EPOLLRDHUP) { // client
   // 关闭写端，这里先处理RDHUP，就不能继续读完数据
-  //   std::cout << std::format("Channel::HandleEvent() client(fd={})
-  //   disconnected.\n", fd()); close_callback_();
+  //   spdlog::info("Channel::HandleEvent() client(fd={}) disconnected.", fd());
+  //   close_callback_();
   // } else if (revents_ & (EPOLLIN | EPOLLPRI)) {
-  //   std::cout << std::format("Channel::HandleEvent() client(fd={}) read
-  //   data.\n", fd());
+  //   spdlog::info("Channel::HandleEvent() client(fd={}) read data.", fd());
   //   //  普通数据  带外数据
   //   // 接收缓冲区中有数据可以读。
   //   read_callback_();
@@ -87,8 +85,8 @@ void Channel::HandleEvent() {
   //   // 将Connection中的output_buffer写入socket
   //   write_callback_();
   // } else {  // 其它事件，都视为错误。
-  //   std::cout << std::format("Channel::HandleEvent() client(fd={}) error.\n",
-  //   fd()); error_callback_();
+  //   spdlog::error("Channel::HandleEvent() client(fd={}) error.", fd());
+  //   error_callback_();
   // }
 }
 
@@ -99,8 +97,8 @@ void Channel::HandleEvent() {
 //   auto client_sock = new Socket{server_sock->Accept(client_addr)};
 //   int client_fd = client_sock->fd();
 
-//   std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
-//                            client_fd, client_addr.ip(), client_addr.port());
+//   spdlog::info("accept client(fd={},ip={},port={}) ok.", client_fd,
+//                client_addr.ip(), client_addr.port());
 
 //   Connection* conn = new Connection{loop_, client_sock};
 // }

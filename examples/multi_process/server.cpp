@@ -1,9 +1,10 @@
 #include <arpa/inet.h>
+#include <cerrno>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -129,7 +130,7 @@ int main(int argc, char** argv)
     TcpServer tcp_server;
     if (!tcp_server.Init(8080))
     {
-        ::perror("Init  server");
+        spdlog::error("Init server failed: {}", std::strerror(errno));
         return -1;
     }
 
@@ -137,14 +138,14 @@ int main(int argc, char** argv)
     {
         if (!tcp_server.Accept())
         {
-            ::perror("Accept");
+            spdlog::error("Accept failed: {}", std::strerror(errno));
             return -1;
         }
 
         int pid = ::fork();
         if (pid == -1)
         {
-            ::perror("fork");
+            spdlog::error("fork failed: {}", std::strerror(errno));
             return -1;
         }
         if (pid > 0)
@@ -155,7 +156,7 @@ int main(int argc, char** argv)
 
         // 子进程执行的部分
         tcp_server.CloseListen();
-        std::cout << "客户端已连接\n";
+        spdlog::info("客户端已连接");
 
         std::string buffer;
         for (int i = 0; i < 10; i++) // 循环3次，将与服务端进行三次通讯。
@@ -163,18 +164,18 @@ int main(int argc, char** argv)
             // 接收客户端的报文，如果客户端没有发送回应报文，recv()函数将阻塞等待。
             if (tcp_server.Recv(buffer, 1024) == false)
             {
-                perror("recv()");
+                spdlog::error("recv() failed: {}", std::strerror(errno));
                 break;
             }
-            std::cout << "接收：" << buffer << std::endl;
+            spdlog::info("接收：{}", buffer);
 
             buffer = "ok";
             if (tcp_server.Send(buffer) == false)
             {
-                ::perror("Send");
+                spdlog::error("Send failed: {}", std::strerror(errno));
                 break;
             }
-            std::cout << "发送: " << buffer << std::endl;
+            spdlog::info("发送: {}", buffer);
         }
         return 0;
     }

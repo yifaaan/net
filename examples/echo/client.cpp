@@ -1,9 +1,10 @@
 #include <arpa/inet.h>
+#include <cerrno>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -96,14 +97,15 @@ int main(int argc, char** argv)
 {
     if (argc != 3)
     {
-        std::cout << "Using:./client 服务端的IP 服务端的端口\nExample:./client 192.168.101.138 5005\n\n";
+        spdlog::error("Using:./client 服务端的IP 服务端的端口");
+        spdlog::error("Example:./client 192.168.101.138 5005");
         return -1;
     }
 
     TcpClient tcp_client;
     if (tcp_client.Connect(argv[1], ::atoi(argv[2])) == false) // 向服务端发起连接请求。
     {
-        perror("connect()");
+        spdlog::error("connect() failed: {}", std::strerror(errno));
         return -1;
     }
 
@@ -115,18 +117,18 @@ int main(int argc, char** argv)
         // 向服务端发送请求报文。
         if (tcp_client.Send(buffer) == false)
         {
-            ::perror("send");
+            spdlog::error("send failed: {}", std::strerror(errno));
             break;
         }
-        std::cout << "发送：" << buffer << std::endl;
+        spdlog::info("发送：{}", buffer);
 
         // 接收服务端的回应报文，如果服务端没有发送回应报文，recv()函数将阻塞等待。
         if (tcp_client.Recv(buffer, 1024) == false)
         {
-            ::perror("recv()");
+            spdlog::error("recv() failed: {}", std::strerror(errno));
             break;
         }
-        std::cout << "接收：" << buffer << std::endl;
+        spdlog::info("接收：{}", buffer);
 
         ::sleep(1);
     }

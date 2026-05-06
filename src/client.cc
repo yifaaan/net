@@ -1,16 +1,18 @@
 
 #include <arpa/inet.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <spdlog/spdlog.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
 int main(int argc, char* argv[]) {
   if (argc != 3) {
-    printf("usage:./client ip port\n");
-    printf("example:./client 192.168.150.128 5085\n\n");
+    spdlog::error("usage: ./client ip port");
+    spdlog::error("example: ./client 192.168.150.128 5085");
     return -1;
   }
 
@@ -19,7 +21,7 @@ int main(int argc, char* argv[]) {
   char buf[1024];
 
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    printf("socket() failed.\n");
+    spdlog::error("socket() failed: {}", std::strerror(errno));
     return -1;
   }
 
@@ -29,13 +31,14 @@ int main(int argc, char* argv[]) {
   servaddr.sin_addr.s_addr = inet_addr(argv[1]);
 
   if (connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) != 0) {
-    printf("connect(%s:%s) failed.\n", argv[1], argv[2]);
+    spdlog::error("connect({}:{}) failed: {}", argv[1], argv[2],
+                  std::strerror(errno));
     close(sockfd);
     return -1;
   }
 
-  printf("connect ok.\n");
-  // printf("开始时间：%d",time(0));
+  spdlog::info("connect ok");
+  // spdlog::info("开始时间：{}", time(0));
 
   for (int ii = 0; ii < 1; ii++) {
     // 从命令行输入内容。
@@ -51,21 +54,21 @@ int main(int argc, char* argv[]) {
   for (int ii = 0; ii < 1; ii++) {
     int len;
     if (::recv(sockfd, &len, sizeof(len), MSG_WAITALL) != sizeof(len)) {
-      printf("recv len failed.\n");
+      spdlog::error("recv len failed: {}", std::strerror(errno));
       break;
     }
     if (len <= 0 || len >= static_cast<int>(sizeof(buf))) {
-      printf("invalid body len=%d\n", len);
+      spdlog::error("invalid body len={}", len);
       break;
     }
     ::memset(buf, 0, sizeof(buf));
     if (::recv(sockfd, buf, len, MSG_WAITALL) != len) {
-      printf("recv body failed.\n");
+      spdlog::error("recv body failed: {}", std::strerror(errno));
       break;
     }
-    printf("%s", buf);
+    spdlog::info("{}", buf);
   }
 
   sleep(100);
-  // printf("结束时间：%d",time(0));
+  // spdlog::info("结束时间：{}", time(0));
 }
