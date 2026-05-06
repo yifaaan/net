@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <chrono>
 
 #include "buffer.h"
 
@@ -60,6 +61,11 @@ class Connection : public std::enable_shared_from_this<Connection> {
     send_complete_callback_ = std::move(cb);
   }
 
+  // 判断是否空闲
+  bool Timeout(Clock::time_point now, int seconds) {
+    return now - last_active_time_ > std::chrono::seconds{seconds};
+  }
+
  private:
   // Acceptor对应的事件循环，构造时传入
   EventLoop* loop_{};
@@ -70,7 +76,7 @@ class Connection : public std::enable_shared_from_this<Connection> {
   Buffer input_buffer_;
   Buffer output_buffer_;
 
-  Clock::time_point last_active_time{Clock::now()};
+  Clock::time_point last_active_time_{Clock::now()};
 
   // 客户端断开连接的回调，TcpServer在创建Connection时需要指定
   std::function<void(Ptr)> close_callback_;

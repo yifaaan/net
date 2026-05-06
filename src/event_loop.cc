@@ -6,9 +6,11 @@
 #include <sys/time.h>
 #include <sys/timerfd.h>
 
+#include <chrono>
 #include <ctime>
 
 #include "channel.h"
+#include "connection.h"
 #include "epoll.h"
 
 namespace {
@@ -67,6 +69,21 @@ void EventLoop::HandleTimer() {
   ::read(timerfd_, &expired, sizeof(expired));
   spdlog::info("component={}_event_loop event=timerfd",
                is_main_loop_ ? "main" : "sub");
+  if (!is_main_loop_) {  // main_loop并不持有客户连接connection
+    auto now = std::chrono::steady_clock::now();
+    // 删掉不活跃连接
+    for (auto it = conns_.begin(); it != conns_.end();) {
+      auto fd = it->first;
+      const auto& conn = it->second;
+      if (conn->Timeout(now, 20)) {
+        // TODO：lock
+        conn_time_out_(fd);     // 通知 TcpServer::RemoveConn(fd)
+        it = conns_.erase(it);  // 删 sub loop 的表
+      } else {
+        ++it;
+      }
+    }
+  }
 }
 
 void EventLoop::Run() {
@@ -107,4 +124,8 @@ void EventLoop::DoPendingTasks() {
     tmp.pop();
     t();
   }
+}
+
+void EventLoop::NewConnection(Connection::Ptr conn) {
+  conns_[conn->fd()] = conn;
 }

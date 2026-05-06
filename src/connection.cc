@@ -1,5 +1,7 @@
 #include "connection.h"
 
+#include <spdlog/spdlog.h>
+
 #include <cerrno>
 #include <cstring>
 
@@ -27,7 +29,10 @@ Connection::Connection(EventLoop* loop, std::unique_ptr<Socket> client_sock)
   client_channel_->EnableReading();
 }
 
-Connection::~Connection() = default;
+Connection::~Connection() {
+  spdlog::info("component=connection event=~connection() fd={}",
+               client_sock_->fd());
+}
 
 int Connection::fd() const { return client_sock_->fd(); }
 uint16_t Connection::port() const { return client_sock_->port(); }
@@ -73,7 +78,8 @@ void Connection::HandleOnMessage() {
             "message={}",
             fd(), len, message);
 
-        last_active_time = Clock::now();
+        // 更新连接的活跃时间
+        last_active_time_ = Clock::now();
         on_message_callback_(shared_from_this(), message);
       }
       break;

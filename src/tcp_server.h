@@ -37,6 +37,9 @@ class TcpServer {
   // epoll_wait超时后的回调，由EventLoop调用
   void EpollTimeout(EventLoop* loop);
 
+  // 客户连接空闲后的删除回调
+  void RemoveConn(int fd);
+
   // for echo server: 设置各类事件回调
   void SetNewConnectionCallback(std::function<void(Connection::Ptr)> cb) {
     new_connection_callback_ = std::move(cb);

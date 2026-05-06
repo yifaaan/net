@@ -1,14 +1,16 @@
 #pragma once
 
-#include <unistd.h>
 #include <sys/timerfd.h>
+#include <unistd.h>
 
 #include <functional>
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <unordered_map>
 
 #include "channel.h"
+#include "connection.h"
 #include "epoll.h"
 
 class Channel;
@@ -30,11 +32,16 @@ class EventLoop {
     epoll_timeout_callback_ = std::move(cb);
   }
 
-  
+  void SetConnTimeoutCallback(std::function<void(int)> cb) {
+    conn_time_out_ = std::move(cb);
+  }
+
   // 唤醒该事件循环
   void Wakeup();
 
   void HandleWakeup();
+
+  // 定时器超时
   void HandleTimer();
 
   // 判断当前线程是否是运行事件循环的线程
@@ -43,10 +50,13 @@ class EventLoop {
   }
 
   // 向待执行队列添加任务
-  void QueueInLoop(std::function<void()> task); 
+  void QueueInLoop(std::function<void()> task);
 
   // 执行队列的任务
   void DoPendingTasks();
+
+
+  void NewConnection(Connection::Ptr conn);
 
  private:
   Epoll epoll_;
@@ -57,9 +67,14 @@ class EventLoop {
   int timerfd_{-1};
   Channel timer_channel_;
   bool is_main_loop_{};
+  // 当前Loop负责的连接
+  std::unordered_map<int, Connection::Ptr> conns_;
 
   std::queue<std::function<void()>> tasks_;
   std::mutex mutex_;
   // epoll_wait超时后，调用的回调-> TcpServer::EpollTimeout()
   std::function<void(EventLoop*)> epoll_timeout_callback_;
+
+  // 连接的空闲时间过长，需要断开，TcpServer创建Connection时设置
+  std::function<void(int)> conn_time_out_;
 };
