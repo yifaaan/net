@@ -7,7 +7,6 @@
 
 #include "channel.h"
 #include "event_loop.h"
-#include "log.h"
 #include "socket.h"
 
 Connection::Connection(EventLoop* loop, std::unique_ptr<Socket> client_sock)
@@ -63,8 +62,19 @@ void Connection::HandleOnMessage() {
     } else if (nread == -1 && ((errno == EAGAIN) || (errno == EWOULDBLOCK))) {
       // 内核接收缓冲区的全部的数据已读取完毕。
       while (true) {
-        int len;
+        // 至少要有 4 字节报文长度头，否则不能解析
+        if (input_buffer_.size() < sizeof(int)) break;
+
+        int len = 0;
         std::memcpy(&len, input_buffer_.data(), sizeof(len));
+        // 简单防御：非法长度直接断开，避免一直卡住等待更多字节
+        if (len <= 0 || len > 1024 * 1024) {
+          spdlog::error(
+              "component=connection event=invalid_message_len fd={} bytes={}",
+              fd(), len);
+          ErrorCallback();
+          return;
+        }
         // inputbuffer 中数据量小于len，说明报文不完整
         if (input_buffer_.size() < len + 4) break;
 

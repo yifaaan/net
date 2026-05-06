@@ -40,6 +40,10 @@ target("net_client")
   add_files("src/client.cc")
   use_spdlog()
 
+target("net_bench")
+  set_kind("binary")
+  add_files("src/bench_client.cc")
+
 target("echo_client")
   set_kind("binary")
   add_files("examples/echo/client.cpp")
