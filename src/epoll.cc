@@ -13,7 +13,8 @@
 Epoll::Epoll() {
   fd_ = ::epoll_create(1);
   if (fd_ < 0) {
-    spdlog::error("epoll_create() failed: {}", std::strerror(errno));
+    spdlog::error("component=epoll event=create_failed error={}",
+                  std::strerror(errno));
     std::exit(-1);
   }
 }
@@ -25,7 +26,8 @@ Epoll::~Epoll() { ::close(fd_); }
 //   ev.data.fd = fd;
 //   ev.events = EPOLLIN;
 //   if (epoll_ctl(fd_, EPOLL_CTL_ADD, fd, &ev) == -1) {
-//     spdlog::error("epoll_ctl() failed: {}", std::strerror(errno));
+//     spdlog::error("component=epoll event=ctl_failed op=add fd={} error={}",
+//                   fd, std::strerror(errno));
 //     std::exit(-1);
 //   }
 // }
@@ -37,7 +39,9 @@ void Epoll::UpdateChannel(Channel* ch) {
 
   int op = ch->in_epoll() ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
   if (epoll_ctl(fd_, op, ch->fd(), &ev) == -1) {
-    spdlog::error("epoll_ctl() failed: {}", std::strerror(errno));
+    spdlog::error("component=epoll event=ctl_failed op={} fd={} events=0x{:x} error={}",
+                  op == EPOLL_CTL_MOD ? "mod" : "add", ch->fd(), ch->events(),
+                  std::strerror(errno));
     std::exit(-1);
   }
   ch->SetInEpoll();
@@ -45,9 +49,10 @@ void Epoll::UpdateChannel(Channel* ch) {
 
 void Epoll::RemoveChannel(Channel* ch) {
   if (ch->in_epoll()) {
-    spdlog::info("Epoll::RemoveChannel() fd={}", ch->fd());
+    spdlog::info("component=epoll event=channel_remove fd={}", ch->fd());
     if (epoll_ctl(fd_, EPOLL_CTL_DEL, ch->fd(), nullptr) == -1) {
-      spdlog::error("epoll_ctl() failed: {}", std::strerror(errno));
+      spdlog::error("component=epoll event=ctl_failed op=del fd={} error={}",
+                    ch->fd(), std::strerror(errno));
       std::exit(-1);
     }
   }
@@ -57,7 +62,8 @@ void Epoll::RemoveChannel(Channel* ch) {
 //   std::vector<epoll_event> evs;
 //   int n = ::epoll_wait(fd_, events_.data(), events_.size(), timeout);
 //   if (n < 0) {
-//     spdlog::error("epoll_wait() failed: {}", std::strerror(errno));
+//     spdlog::error("component=epoll event=wait_failed error={}",
+//                   std::strerror(errno));
 //     std::exit(-1);
 //   }
 //   if (n == 0) {
@@ -72,7 +78,8 @@ std::vector<Channel*> Epoll::Loop(int timeout) {
   std::vector<Channel*> chs;
   int n = ::epoll_wait(fd_, events_.data(), events_.size(), timeout);
   if (n < 0) {
-    spdlog::error("epoll_wait() failed: {}", std::strerror(errno));
+    spdlog::error("component=epoll event=wait_failed error={}",
+                  std::strerror(errno));
     std::exit(-1);
   }
   if (n == 0) {

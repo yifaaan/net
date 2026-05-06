@@ -33,8 +33,7 @@ void EventLoop::HandleWakeup() {
 }
 
 void EventLoop::Run() {
-  // spdlog::info("EventLoop::Run() thread is {}",
-  //              spdlog::fmt_lib::streamed(std::this_thread::get_id()));
+  // spdlog::info("component=event_loop event=run_start");
   thread_id_ = std::this_thread::get_id();
   while (true) {
     // epoll_wait

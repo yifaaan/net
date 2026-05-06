@@ -107,7 +107,7 @@ public:
         std::ifstream fin(name, std::ios::binary);
         if (!fin.is_open())
         {
-            spdlog::error("打开文件: {} 失败", name);
+            spdlog::error("component=file_client event=open_file_failed file={}", name);
             return false;
         }
         int to_read = 0;
@@ -144,15 +144,16 @@ int main(int argc, char** argv)
 
     if (argc != 5)
     {
-        spdlog::error("Using:./client 服务端的IP 服务端的端口 文件名 大小(Byte)");
-        spdlog::error("Example:./client 192.168.101.138 5005 a.txt 20");
+        spdlog::error("component=file_client event=invalid_args usage=\"./client ip port file size\"");
+        spdlog::error("component=file_client event=usage_example example=\"./client 192.168.101.138 5005 a.txt 20\"");
         return -1;
     }
 
     TcpClient tcp_client;
     if (tcp_client.Connect(argv[1], ::atoi(argv[2])) == false) // 向服务端发起连接请求。
     {
-        spdlog::error("connect() failed: {}", std::strerror(errno));
+        spdlog::error("component=file_client event=connect_failed ip={} port={} error={}",
+                      argv[1], argv[2], std::strerror(errno));
         return -1;
     }
 
@@ -170,31 +171,36 @@ int main(int argc, char** argv)
     FileInfo file_info{ .file_size = ::atoi(argv[4]) };
     ::strcpy(file_info.name, argv[3]);
     tcp_client.Send(&file_info, sizeof(file_info));
-    spdlog::info("文件信息发送成功");
+    spdlog::info("component=file_client event=send_file_meta file={} bytes={}",
+                 file_info.name, file_info.file_size);
 
     std::string buffer;
     if (!tcp_client.Recv(buffer, 2))
     {
-        spdlog::error("Recv failed: {}", std::strerror(errno));
+        spdlog::error("component=file_client event=recv_meta_ack_failed error={}",
+                      std::strerror(errno));
         return -1;
     }
     if (buffer != "ok")
     {
-        spdlog::error("服务端没有确认回复");
+        spdlog::error("component=file_client event=unexpected_meta_ack ack={}", buffer);
         return -1;
     }
+    spdlog::info("component=file_client event=recv_meta_ack ack={}", buffer);
     tcp_client.SendFile(file_info.name, file_info.file_size);
 
     if (!tcp_client.Recv(buffer, 2))
     {
-        spdlog::error("Recv failed: {}", std::strerror(errno));
+        spdlog::error("component=file_client event=recv_file_ack_failed error={}",
+                      std::strerror(errno));
         return -1;
     }
     if (buffer != "ok")
     {
-        spdlog::error("服务端没有确认回复");
+        spdlog::error("component=file_client event=unexpected_file_ack ack={}", buffer);
         return -1;
     }
-    spdlog::info("文件发送成功");
+    spdlog::info("component=file_client event=send_file_done file={} bytes={}",
+                 file_info.name, file_info.file_size);
 
 }

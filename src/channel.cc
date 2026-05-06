@@ -52,7 +52,8 @@ void Channel::HandleEvent() {
   if (revents_ &
       (EPOLLIN |
        EPOLLPRI)) {  // 先处理读，如果对方发送了FIN，还能继续读取数据。
-    spdlog::info("Channel::HandleEvent() client(fd={}) read data.", fd());
+    spdlog::info("component=channel event=read_ready fd={} revents=0x{:x}",
+                 fd(), revents_);
     //  普通数据  带外数据
     // 接收缓冲区中有数据可以读。
     read_callback_();
@@ -61,21 +62,27 @@ void Channel::HandleEvent() {
     // 将Connection中的output_buffer写入socket
     write_callback_();
   } else if (revents_ & EPOLLRDHUP) {  // client 关闭写端
-    spdlog::info("Channel::HandleEvent() client(fd={}) disconnected.", fd());
+    spdlog::info("component=channel event=peer_shutdown fd={} revents=0x{:x}",
+                 fd(), revents_);
     // remove
     close_callback_();
   } else {  // 其它事件，都视为错误。
-    spdlog::error("Channel::HandleEvent() client(fd={}) error.", fd());
+    spdlog::error(
+        "component=channel event=unexpected_event fd={} revents=0x{:x}", fd(),
+        revents_);
 
     error_callback_();
   }
 
   // if (revents_ & EPOLLRDHUP) { // client
   // 关闭写端，这里先处理RDHUP，就不能继续读完数据
-  //   spdlog::info("Channel::HandleEvent() client(fd={}) disconnected.", fd());
+  //   spdlog::info("component=channel event=peer_shutdown fd={}
+  //   revents=0x{:x}",
+  //                fd(), revents_);
   //   close_callback_();
   // } else if (revents_ & (EPOLLIN | EPOLLPRI)) {
-  //   spdlog::info("Channel::HandleEvent() client(fd={}) read data.", fd());
+  //   spdlog::info("component=channel event=read_ready fd={} revents=0x{:x}",
+  //                fd(), revents_);
   //   //  普通数据  带外数据
   //   // 接收缓冲区中有数据可以读。
   //   read_callback_();
@@ -84,7 +91,9 @@ void Channel::HandleEvent() {
   //   // 将Connection中的output_buffer写入socket
   //   write_callback_();
   // } else {  // 其它事件，都视为错误。
-  //   spdlog::error("Channel::HandleEvent() client(fd={}) error.", fd());
+  //   spdlog::error("component=channel event=unexpected_event fd={}
+  //   revents=0x{:x}",
+  //                 fd(), revents_);
   //   error_callback_();
   // }
 }
@@ -96,8 +105,8 @@ void Channel::HandleEvent() {
 //   auto client_sock = new Socket{server_sock->Accept(client_addr)};
 //   int client_fd = client_sock->fd();
 
-//   spdlog::info("accept client(fd={},ip={},port={}) ok.", client_fd,
-//                client_addr.ip(), client_addr.port());
+//   spdlog::info("component=acceptor event=accept fd={} ip={} port={}",
+//                client_fd, client_addr.ip(), client_addr.port());
 
 //   Connection* conn = new Connection{loop_, client_sock};
 // }

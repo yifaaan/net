@@ -9,8 +9,8 @@ ThreadPool::ThreadPool(int thread_num, std::string thread_type)
   threads_.reserve(thread_num);
   for (int i = 0; i < thread_num; i++) {
     threads_.emplace_back([this](std::stop_token token) {
-      spdlog::info("{} thread id={}", thread_type_,
-                   spdlog::fmt_lib::streamed(std::this_thread::get_id()));
+      spdlog::info("component=thread_pool event=worker_start pool={}",
+                   thread_type_);
 
       while (true) {
         std::unique_lock lock{mutex_};
@@ -24,9 +24,11 @@ ThreadPool::ThreadPool(int thread_num, std::string thread_type)
 
         lock.unlock();
 
-        spdlog::info("{} thread id={} executed task", thread_type_,
-                     spdlog::fmt_lib::streamed(std::this_thread::get_id()));
+        spdlog::info("component=thread_pool event=task_start pool={}",
+                     thread_type_);
         task();
+        spdlog::info("component=thread_pool event=task_done pool={}",
+                     thread_type_);
       }
     });
   }

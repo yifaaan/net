@@ -52,20 +52,21 @@ void TcpServer::HandleNewConnection(std::unique_ptr<Socket> client_sock) {
   });
   conn->SetSendCompeleteCallbace(
       [this](Connection::Ptr conn) { SendComplete(conn); });
-  spdlog::info("TcpServer::HandleNewConnection() client(fd={},ip={},port={}) ok.",
-               conn->fd(), conn->ip(), conn->port());
+  spdlog::info(
+      "component=tcp_server event=connection_accept fd={} ip={} port={} loop_index={}",
+      conn->fd(), conn->ip(), conn->port(), id);
 
   // for echo server
   new_connection_callback_(conn);
 }
 
 void TcpServer::HandleCloseConnection(Connection::Ptr conn) {
-  spdlog::info("TcpServer::HandleCloseConnection() client(fd={}) disconnected.", conn->fd());
+  spdlog::info("component=tcp_server event=connection_close fd={}", conn->fd());
   // for echo server
   close_connection_callback_(conn);
 
   // 对方已关闭，有些系统检测不到，可以使用EPOLLIN，recv()返回0。
-  // spdlog::info("1client(eventfd={}) disconnected.", conn->fd());
+  // spdlog::info("component=tcp_server event=connection_close_detected fd={}", conn->fd());
   conns_.erase(conn->fd());
 }
 
@@ -73,7 +74,7 @@ void TcpServer::HandleErrorConnection(Connection::Ptr conn) {
   // for echo server
   error_connection_callback_(conn);
 
-  // spdlog::info("client(eventfd={}) error.", conn->fd());
+  // spdlog::info("component=tcp_server event=connection_error fd={}", conn->fd());
   conns_.erase(conn->fd());
 }
 

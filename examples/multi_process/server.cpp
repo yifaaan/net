@@ -133,7 +133,8 @@ int main(int argc, char** argv)
     TcpServer tcp_server;
     if (!tcp_server.Init(8080))
     {
-        spdlog::error("Init server failed: {}", std::strerror(errno));
+        spdlog::error("component=multi_server event=init_failed port=8080 error={}",
+                      std::strerror(errno));
         return -1;
     }
 
@@ -141,14 +142,16 @@ int main(int argc, char** argv)
     {
         if (!tcp_server.Accept())
         {
-            spdlog::error("Accept failed: {}", std::strerror(errno));
+            spdlog::error("component=multi_server event=accept_failed error={}",
+                          std::strerror(errno));
             return -1;
         }
 
         int pid = ::fork();
         if (pid == -1)
         {
-            spdlog::error("fork failed: {}", std::strerror(errno));
+            spdlog::error("component=multi_server event=fork_failed error={}",
+                          std::strerror(errno));
             return -1;
         }
         if (pid > 0)
@@ -159,7 +162,7 @@ int main(int argc, char** argv)
 
         // 子进程执行的部分
         tcp_server.CloseListen();
-        spdlog::info("客户端已连接");
+        spdlog::info("component=multi_server event=client_connected");
 
         std::string buffer;
         for (int i = 0; i < 10; i++) // 循环3次，将与服务端进行三次通讯。
@@ -167,18 +170,22 @@ int main(int argc, char** argv)
             // 接收客户端的报文，如果客户端没有发送回应报文，recv()函数将阻塞等待。
             if (tcp_server.Recv(buffer, 1024) == false)
             {
-                spdlog::error("recv() failed: {}", std::strerror(errno));
+                spdlog::error("component=multi_server event=recv_failed index={} error={}",
+                              i + 1, std::strerror(errno));
                 break;
             }
-            spdlog::info("接收：{}", buffer);
+            spdlog::info("component=multi_server event=recv_request index={} bytes={} message={}",
+                         i + 1, buffer.size(), buffer);
 
             buffer = "ok";
             if (tcp_server.Send(buffer) == false)
             {
-                spdlog::error("Send failed: {}", std::strerror(errno));
+                spdlog::error("component=multi_server event=send_failed index={} error={}",
+                              i + 1, std::strerror(errno));
                 break;
             }
-            spdlog::info("发送: {}", buffer);
+            spdlog::info("component=multi_server event=send_reply index={} bytes={} message={}",
+                         i + 1, buffer.size(), buffer);
         }
         return 0;
     }

@@ -52,7 +52,8 @@ class Socket {
 
   void Bind(const InetAddress& addr) {
     if (::bind(fd_, addr.addr(), sizeof(sockaddr)) < 0) {
-      spdlog::error("bind() failed: {}", std::strerror(errno));
+      spdlog::error("component=socket event=bind_failed fd={} ip={} port={} error={}",
+                    fd_, addr.ip(), addr.port(), std::strerror(errno));
       std::exit(-1);
     }
     SetIpPort(addr.ip(), addr.port());
@@ -60,7 +61,8 @@ class Socket {
 
   void Listen(int n = 128) {
     if (::listen(fd_, n) < 0) {
-      spdlog::error("listen failed: {}", std::strerror(errno));
+      spdlog::error("component=socket event=listen_failed fd={} backlog={} error={}",
+                    fd_, n, std::strerror(errno));
       std::exit(-1);
     }
   }
@@ -84,7 +86,8 @@ class Socket {
 inline int CreateNonBlocking() {
   int listen_fd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
   if (listen_fd < 0) {
-    spdlog::error("socket() failed: {}", std::strerror(errno));
+    spdlog::error("component=socket event=create_failed error={}",
+                  std::strerror(errno));
     std::exit(-1);
   }
   return listen_fd;

@@ -7,8 +7,8 @@ int main(int argc, char* argv[]) {
   net::InitLog();
 
   if (argc != 3) {
-    spdlog::error("usage: ./tcpepoll ip port");
-    spdlog::error("example: ./tcpepoll 192.168.150.128 5085");
+    spdlog::error("component=net_main event=invalid_args usage=\"./tcpepoll ip port\"");
+    spdlog::error("component=net_main event=usage_example example=\"./tcpepoll 192.168.150.128 5085\"");
     return -1;
   }
 

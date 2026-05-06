@@ -135,7 +135,7 @@ public:
         fout.open(name, std::ios::binary);
         if (!fout.is_open())
         {
-            spdlog::error("打开文件: {} 失败", name);
+            spdlog::error("component=file_server event=open_file_failed file={}", name);
             return false;
         }
         int readed = 0;
@@ -175,15 +175,17 @@ int main(int argc, char** argv)
     TcpServer tcp_server;
     if (!tcp_server.Init(8080))
     {
-        spdlog::error("Init server failed: {}", std::strerror(errno));
+        spdlog::error("component=file_server event=init_failed port=8080 error={}",
+                      std::strerror(errno));
         return -1;
     }
     if (!tcp_server.Accept())
     {
-        spdlog::error("Accept failed: {}", std::strerror(errno));
+        spdlog::error("component=file_server event=accept_failed error={}",
+                      std::strerror(errno));
         return -1;
     }
-    spdlog::info("客户端已连接");
+    spdlog::info("component=file_server event=client_connected");
 
     // 接收文件
     // 1.文件名+文件大小
@@ -197,14 +199,19 @@ int main(int argc, char** argv)
     };
     FileInfo file_info{};
     tcp_server.Recv(&file_info, sizeof(file_info));
-    spdlog::info("文件信息: {}, {}-bytes", file_info.name, file_info.file_size);
+    spdlog::info("component=file_server event=recv_file_meta file={} bytes={}",
+                 file_info.name, file_info.file_size);
     tcp_server.Send("ok");
+    spdlog::info("component=file_server event=send_meta_ack ack=ok");
 
     if (!tcp_server.RecvFile("xxx", file_info.file_size))
     {
-        spdlog::error("接收文件内容失败");
+        spdlog::error("component=file_server event=recv_file_failed file={} bytes={}",
+                      file_info.name, file_info.file_size);
         return -1;
     }
-    spdlog::info("接收文件内容成功");
+    spdlog::info("component=file_server event=recv_file_done file={} bytes={}",
+                 file_info.name, file_info.file_size);
     tcp_server.Send("ok");
+    spdlog::info("component=file_server event=send_file_ack ack=ok");
 }

@@ -100,15 +100,16 @@ int main(int argc, char** argv)
 
     if (argc != 3)
     {
-        spdlog::error("Using:./client 服务端的IP 服务端的端口");
-        spdlog::error("Example:./client 192.168.101.138 5005");
+        spdlog::error("component=multi_client event=invalid_args usage=\"./client ip port\"");
+        spdlog::error("component=multi_client event=usage_example example=\"./client 192.168.101.138 5005\"");
         return -1;
     }
 
     TcpClient tcp_client;
     if (tcp_client.Connect(argv[1], ::atoi(argv[2])) == false) // 向服务端发起连接请求。
     {
-        spdlog::error("connect() failed: {}", std::strerror(errno));
+        spdlog::error("component=multi_client event=connect_failed ip={} port={} error={}",
+                      argv[1], argv[2], std::strerror(errno));
         return -1;
     }
 
@@ -120,18 +121,22 @@ int main(int argc, char** argv)
         // 向服务端发送请求报文。
         if (tcp_client.Send(buffer) == false)
         {
-            spdlog::error("send failed: {}", std::strerror(errno));
+            spdlog::error("component=multi_client event=send_failed index={} error={}",
+                          i + 1, std::strerror(errno));
             break;
         }
-        spdlog::info("发送：{}", buffer);
+        spdlog::info("component=multi_client event=send_request index={} bytes={} message={}",
+                     i + 1, buffer.size(), buffer);
 
         // 接收服务端的回应报文，如果服务端没有发送回应报文，recv()函数将阻塞等待。
         if (tcp_client.Recv(buffer, 1024) == false)
         {
-            spdlog::error("recv() failed: {}", std::strerror(errno));
+            spdlog::error("component=multi_client event=recv_failed index={} error={}",
+                          i + 1, std::strerror(errno));
             break;
         }
-        spdlog::info("接收：{}", buffer);
+        spdlog::info("component=multi_client event=recv_reply index={} bytes={} message={}",
+                     i + 1, buffer.size(), buffer);
 
         ::sleep(1);
     }
