@@ -56,11 +56,13 @@ void EchoServer::HandleMessage(Connection::Ptr conn, std::string& message) {
             << std::this_thread::get_id() << '\n';
   message = "reply:" + message;
 
-  // 回应报文
-  // 将数据写入Connection的output_buffer
-  // conn->Send(message.data(), message.size());
   std::weak_ptr<Connection> weak_conn = conn;
-  thread_pool_->AddTask([this, weak_conn, message] {
+  if (thread_pool_->Size() == 0) {  // 没有worker线程，直接在当前IO线程处理
+    OnMessage(weak_conn, std::string(message));
+    return;
+  }
+
+  thread_pool_->AddTask([this, weak_conn, message] {  //  发给worker线程
     // std::cout << "thread id is " << std::this_thread::get_id() << "\n";
     OnMessage(weak_conn, message);
   });

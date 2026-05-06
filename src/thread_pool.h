@@ -13,6 +13,8 @@ class ThreadPool {
 
   void AddTask(std::function<void()> task);
 
+  size_t Size() const { return threads_.size(); }
+
  private:
   std::vector<std::jthread> threads_;
   std::queue<std::function<void()>> tasks_;

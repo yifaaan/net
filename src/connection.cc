@@ -4,6 +4,7 @@
 #include <format>
 
 #include "channel.h"
+#include "event_loop.h"
 #include "socket.h"
 
 Connection::Connection(EventLoop* loop, std::unique_ptr<Socket> client_sock)
@@ -20,7 +21,7 @@ Connection::Connection(EventLoop* loop, std::unique_ptr<Socket> client_sock)
   client_channel_->SetErrorCallback([this] { ErrorCallback(); });
 
   // 设置边缘触发
-  // client_channel_->UseET();
+  client_channel_->UseET();
   // 为新客户端连接准备读事件，并添加到epoll中。
   client_channel_->EnableReading();
 }
@@ -97,6 +98,17 @@ void Connection::WriteCallback() {
 }
 
 void Connection::Send(const char* data, size_t len) {
+  if (loop_->IsInLoopThread()) {
+    // 是IO线程，直接发送
+    SendInLoop(data, len);
+  } else {
+    // 将发送操作提交给IO线程去处理
+    loop_->QueueInLoop(
+        [=, self = shared_from_this()] { self->SendInLoop(data, len); });
+  }
+}
+
+void Connection::SendInLoop(const char* data, size_t len) {
   output_buffer_.AppendWithHead(data, len);  // 将用户数据 保存到发送缓冲区
   client_channel_->EnableWriting();          // 注册 写事件
 }

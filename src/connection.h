@@ -21,7 +21,11 @@ class Connection : public std::enable_shared_from_this<Connection> {
   uint16_t port() const;
   const std::string& ip() const;
 
+  // IO和worker都可以调用，统一发送入口
   void Send(const char* data, size_t len);
+
+  // IO线程可以直接调用，Worker需要交给IO线程
+  void SendInLoop(const char* data, size_t len);
 
   // Tcp连接断开的回调，由Channel类检测到断开后 回调
   void CloseCallback();
