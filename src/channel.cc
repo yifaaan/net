@@ -4,11 +4,10 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-#include <spdlog/spdlog.h>
-
 #include "connection.h"
 #include "epoll.h"
 #include "event_loop.h"
+#include "log.h"
 
 Channel::Channel(EventLoop* loop, int fd) : loop_{loop}, fd_{fd} {}
 

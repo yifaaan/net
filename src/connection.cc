@@ -2,10 +2,10 @@
 
 #include <cerrno>
 #include <cstring>
-#include <spdlog/spdlog.h>
 
 #include "channel.h"
 #include "event_loop.h"
+#include "log.h"
 #include "socket.h"
 
 Connection::Connection(EventLoop* loop, std::unique_ptr<Socket> client_sock)

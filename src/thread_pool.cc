@@ -1,8 +1,8 @@
 #include "thread_pool.h"
 
-#include <spdlog/fmt/ostr.h>
-#include <spdlog/spdlog.h>
 #include <thread>
+
+#include "log.h"
 
 ThreadPool::ThreadPool(int thread_num, std::string thread_type)
     : thread_type_{std::move(thread_type)} {

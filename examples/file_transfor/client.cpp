@@ -5,10 +5,11 @@
 #include <fstream>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <spdlog/spdlog.h>
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include "log.h"
 
 class TcpClient
 {
@@ -139,6 +140,8 @@ private:
 
 int main(int argc, char** argv)
 {
+    net::InitLog();
+
     if (argc != 5)
     {
         spdlog::error("Using:./client 服务端的IP 服务端的端口 文件名 大小(Byte)");

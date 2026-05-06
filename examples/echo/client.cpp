@@ -4,10 +4,11 @@
 #include <cstring>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <spdlog/spdlog.h>
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include "log.h"
 
 class TcpClient
 {
@@ -95,6 +96,8 @@ private:
 
 int main(int argc, char** argv)
 {
+    net::InitLog();
+
     if (argc != 3)
     {
         spdlog::error("Using:./client 服务端的IP 服务端的端口");

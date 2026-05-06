@@ -1,10 +1,9 @@
 #include "tcp_server.h"
 
-#include <spdlog/spdlog.h>
-
 #include "acceptor.h"
 #include "channel.h"
 #include "connection.h"
+#include "log.h"
 #include "socket.h"
 #include "thread_pool.h"
 

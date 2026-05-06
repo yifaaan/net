@@ -1,10 +1,9 @@
 #include "echo_server.h"
 
-#include <spdlog/fmt/ostr.h>
-#include <spdlog/spdlog.h>
 #include <thread>
 
 #include "connection.h"
+#include "log.h"
 #include "tcp_server.h"
 #include "thread_pool.h"
 

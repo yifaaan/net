@@ -4,10 +4,11 @@
 #include <cstring>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <spdlog/spdlog.h>
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include "log.h"
 
 class TcpServer
 {
@@ -127,6 +128,8 @@ private:
 
 int main(int argc, char** argv)
 {
+    net::InitLog();
+
     TcpServer tcp_server;
     if (!tcp_server.Init(8080))
     {

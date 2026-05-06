@@ -21,12 +21,12 @@ local net_sources = {
 }
 
 local function use_spdlog()
+  add_includedirs("src")
   add_packages("spdlog")
 end
 
 target("net_main")
   set_kind("binary")
-  add_includedirs("src")
   add_files("src/tcpepoll.cc")
   add_files(net_sources)
   use_spdlog()

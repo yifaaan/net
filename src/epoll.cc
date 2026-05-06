@@ -6,9 +6,9 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <spdlog/spdlog.h>
 
 #include "channel.h"
+#include "log.h"
 
 Epoll::Epoll() {
   fd_ = ::epoll_create(1);

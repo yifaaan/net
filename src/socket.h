@@ -8,9 +8,9 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <spdlog/spdlog.h>
 
 #include "inet_address.h"
+#include "log.h"
 
 class Socket {
  public:

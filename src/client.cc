@@ -5,11 +5,14 @@
 #include <cstdlib>
 #include <cstring>
 #include <netinet/in.h>
-#include <spdlog/spdlog.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "log.h"
+
 int main(int argc, char* argv[]) {
+  net::InitLog();
+
   if (argc != 3) {
     spdlog::error("usage: ./client ip port");
     spdlog::error("example: ./client 192.168.150.128 5085");
