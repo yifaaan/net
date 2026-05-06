@@ -9,6 +9,7 @@ class EchoServer {
   ~EchoServer();
 
   void Start();
+  void Stop();
 
   // 客户端连接时，TcpServer会回调该函数
   void HandleNewConnection(Connection::Ptr conn);

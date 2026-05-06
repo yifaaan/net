@@ -122,3 +122,21 @@ void Connection::SendInLoop(const char* data, size_t len) {
   output_buffer_.AppendWithHead(data, len);  // 将用户数据 保存到发送缓冲区
   client_channel_->EnableWriting();          // 注册 写事件
 }
+
+void Connection::Shutdown() {
+  if (loop_->IsInLoopThread()) {
+    ShutdownInLoop();
+    return;
+  }
+  loop_->QueueInLoop([self = shared_from_this()] { self->ShutdownInLoop(); });
+}
+
+void Connection::ShutdownInLoop() {
+  // 在所属 IO 线程关闭：先从 epoll 移除，再关闭 fd
+  client_channel_->DisableAll();
+  client_channel_->RemoveFromEpoll();
+  loop_->RemoveConnection(fd());
+  if (client_sock_) {
+    client_sock_->Close();
+  }
+}

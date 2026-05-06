@@ -93,7 +93,7 @@ void EventLoop::HandleTimer() {
 void EventLoop::Run() {
   // spdlog::info("component=event_loop event=run_start");
   thread_id_ = std::this_thread::get_id();
-  while (true) {
+  while (!quitting_.load(std::memory_order_relaxed)) {
     // epoll_wait
     auto channels = epoll_.Loop(5000);
 
@@ -106,6 +106,11 @@ void EventLoop::Run() {
       ch->HandleEvent();
     }
   }
+}
+
+void EventLoop::Quit() {
+  quitting_.store(true, std::memory_order_relaxed);
+  Wakeup();
 }
 
 void EventLoop::QueueInLoop(std::function<void()> task) {
@@ -133,4 +138,9 @@ void EventLoop::DoPendingTasks() {
 void EventLoop::NewConnection(Connection::Ptr conn) {
   std::unique_lock lock{conns_mutex_};
   conns_[conn->fd()] = conn;
+}
+
+void EventLoop::RemoveConnection(int fd) {
+  std::unique_lock lock{conns_mutex_};
+  conns_.erase(fd);
 }

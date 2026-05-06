@@ -49,7 +49,7 @@ inline void InitLog() {
             "seq=%Q time=%Y-%m-%d %H:%M:%S.%e pid=%P tid=%t level=%-5l | %v");
 
     spdlog::set_formatter(std::move(formatter));
-    spdlog::set_level(spdlog::level::info);
+    spdlog::set_level(spdlog::level::debug);
     spdlog::flush_on(spdlog::level::err);
     return true;
   }();

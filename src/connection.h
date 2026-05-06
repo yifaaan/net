@@ -28,6 +28,9 @@ class Connection : public std::enable_shared_from_this<Connection> {
   // IO和worker都可以调用，统一发送入口
   void Send(const char* data, size_t len);
 
+  // 请求优雅关闭连接
+  void Shutdown();
+
   // IO线程可以直接调用，Worker需要交给IO线程
   void SendInLoop(const char* data, size_t len);
 
@@ -67,6 +70,8 @@ class Connection : public std::enable_shared_from_this<Connection> {
   }
 
  private:
+  void ShutdownInLoop();
+
   // Acceptor对应的事件循环，构造时传入
   EventLoop* loop_{};
   // 服务端用于监听连接的socket

@@ -19,6 +19,7 @@ class TcpServer {
   ~TcpServer();
 
   void Start();
+  void Stop();
 
   // 客户端连接时，Acceptor会回调该函数
   void HandleNewConnection(std::unique_ptr<Socket> client_sock);

@@ -32,6 +32,11 @@ EchoServer::~EchoServer() = default;
 
 void EchoServer::Start() { tcp_server_.Start(); }
 
+void EchoServer::Stop() {
+  tcp_server_.Stop();
+  thread_pool_.reset();
+}
+
 // 客户端连接时，TcpServer会回调该函数
 void EchoServer::HandleNewConnection(Connection::Ptr conn) {
   spdlog::info("component=echo_server event=connection_open fd={}",

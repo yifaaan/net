@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include <functional>
+#include <atomic>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -24,6 +25,9 @@ class EventLoop {
   Epoll* epoll() { return &epoll_; }
 
   void Run();
+
+  // 线程安全：请求退出事件循环（会唤醒 epoll_wait）
+  void Quit();
 
   void UpdateChannel(Channel* ch);
   void RemoveChannel(Channel* ch);
@@ -58,11 +62,15 @@ class EventLoop {
 
   void NewConnection(Connection::Ptr conn);
 
+  void RemoveConnection(int fd);
+
  private:
   Epoll epoll_;
   int wakeup_fd_{-1};
   Channel wakeup_channel_;
   std::thread::id thread_id_;
+
+  std::atomic_bool quitting_{false};
 
   int timerfd_{-1};
   Channel timer_channel_;

@@ -32,3 +32,9 @@ void Acceptor::HandleNewConnection() {
   // 调用TcpServer回调，添加connection
   new_connection_callback_(std::move(client_sock));
 }
+
+void Acceptor::Stop() {
+  accept_channel_.DisableAll();
+  accept_channel_.RemoveFromEpoll();
+  srv_sock_.Close();
+}

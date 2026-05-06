@@ -2,6 +2,10 @@ set_project("net")
 set_version("0.1.0")
 
 set_languages("c++20")
+set_config("cc", "gcc-16")
+set_config("cxx", "g++-16")
+set_config("ld", "g++-16")
+set_config("sh", "g++-16")
 add_rules("mode.debug", "mode.release")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".", lsp = "clangd"})
 

@@ -16,6 +16,9 @@ class Acceptor {
   // Acceptor处理客户端新连接事件，由Channel类检测到新客户端连接时回调
   void HandleNewConnection();
 
+  // 停止接受新连接（应在所属 EventLoop 线程调用）
+  void Stop();
+
   void SetNewConnectionCallback(std::function<void(std::unique_ptr<Socket>)> cb) {
     new_connection_callback_ = std::move(cb);
   }

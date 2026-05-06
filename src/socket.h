@@ -15,11 +15,18 @@
 class Socket {
  public:
   explicit Socket(int fd) : fd_(fd) {}
-  ~Socket() { ::close(fd_); }
+  ~Socket() { Close(); }
 
   int fd() const { return fd_; }
   uint16_t port() const { return port_; }
   const std::string& ip() const { return ip_; }
+
+  void Close() {
+    if (fd_ >= 0) {
+      ::close(fd_);
+      fd_ = -1;
+    }
+  }
 
   void SetIpPort(const std::string& ip, uint16_t port) {
     ip_ = ip;
@@ -78,7 +85,7 @@ class Socket {
   }
 
  private:
-  const int fd_{-1};
+  int fd_{-1};
   std::string ip_;
   uint16_t port_{};
 };

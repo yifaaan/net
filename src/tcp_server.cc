@@ -42,6 +42,37 @@ TcpServer::~TcpServer() = default;
 
 void TcpServer::Start() { main_loop_->Run(); }
 
+void TcpServer::Stop() {
+  // 停止接受新连接（必须在 main_loop 线程操作 epoll）
+  main_loop_->QueueInLoop([this] {
+    if (acceptor_) {
+      acceptor_->Stop();
+    }
+  });
+
+  // 优雅关闭当前所有连接
+  std::vector<Connection::Ptr> snapshot;
+  {
+    std::unique_lock lock{mutex_};
+    snapshot.reserve(conns_.size());
+    for (auto& [fd, conn] : conns_) {
+      snapshot.push_back(conn);
+    }
+    conns_.clear();
+  }
+  for (auto& c : snapshot) {
+    c->Shutdown();
+  }
+
+  // 退出所有事件循环
+  for (auto& lp : sub_loops_) {
+    lp->Quit();
+  }
+  main_loop_->Quit();
+
+  thread_pool_.reset();
+}
+
 void TcpServer::HandleNewConnection(std::unique_ptr<Socket> client_sock) {
   // TODO:设置到从事件循环中
   int id = client_sock->fd() % thread_num_;
