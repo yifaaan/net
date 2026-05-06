@@ -18,7 +18,7 @@ class Channel;
 // 事件循环，while总调用epoll_wait
 class EventLoop {
  public:
-  EventLoop(bool is_main_loop);
+  EventLoop(bool is_main_loop, int interval, int timeout);
   ~EventLoop();
 
   Epoll* epoll() { return &epoll_; }
@@ -67,8 +67,11 @@ class EventLoop {
   int timerfd_{-1};
   Channel timer_channel_;
   bool is_main_loop_{};
+
   // 当前Loop负责的连接
   std::unordered_map<int, Connection::Ptr> conns_;
+  std::mutex conns_mutex_;
+  int timeout_{}; // 空闲连接的最大存活时间
 
   std::queue<std::function<void()>> tasks_;
   std::mutex mutex_;

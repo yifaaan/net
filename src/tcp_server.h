@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <mutex>
 #include <unordered_map>
 
 #include "event_loop.h"
@@ -68,7 +69,10 @@ class TcpServer {
  private:
   std::unique_ptr<EventLoop> main_loop_;
   std::unique_ptr<Acceptor> acceptor_;
+
   std::unordered_map<int, Connection::Ptr> conns_;
+  std::mutex mutex_;
+  
   int thread_num_;  // 从事件循环的个数
   std::vector<std::unique_ptr<EventLoop>> sub_loops_;
   std::unique_ptr<ThreadPool> thread_pool_;

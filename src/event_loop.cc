@@ -30,12 +30,13 @@ int CreateTimerFd(int second = 5) {
 }
 }  // namespace
 
-EventLoop::EventLoop(bool is_main_loop)
+EventLoop::EventLoop(bool is_main_loop, int interval, int timeout)
     : wakeup_fd_{::eventfd(0, EFD_NONBLOCK)},
       wakeup_channel_{this, wakeup_fd_},
-      timerfd_{CreateTimerFd()},
+      timerfd_{CreateTimerFd(interval)},
       timer_channel_{this, timerfd_},
-      is_main_loop_{is_main_loop} {
+      is_main_loop_{is_main_loop},
+      timeout_{timeout} {
   wakeup_channel_.SetReadCallback([this] { HandleWakeup(); });
   // 将eventfd加入 epoll，等待唤醒
   wakeup_channel_.UseET();
@@ -75,10 +76,13 @@ void EventLoop::HandleTimer() {
     for (auto it = conns_.begin(); it != conns_.end();) {
       auto fd = it->first;
       const auto& conn = it->second;
-      if (conn->Timeout(now, 20)) {
+      if (conn->Timeout(now, timeout_)) {
         // TODO：lock
-        conn_time_out_(fd);     // 通知 TcpServer::RemoveConn(fd)
-        it = conns_.erase(it);  // 删 sub loop 的表
+        conn_time_out_(fd);  // 通知 TcpServer::RemoveConn(fd)
+        {
+          std::unique_lock lock{conns_mutex_};
+          it = conns_.erase(it);  // 删 sub loop 的表
+        }
       } else {
         ++it;
       }
@@ -127,5 +131,6 @@ void EventLoop::DoPendingTasks() {
 }
 
 void EventLoop::NewConnection(Connection::Ptr conn) {
+  std::unique_lock lock{conns_mutex_};
   conns_[conn->fd()] = conn;
 }

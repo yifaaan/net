@@ -8,7 +8,7 @@
 #include "thread_pool.h"
 
 TcpServer::TcpServer(const std::string& ip, uint16_t port, int thread_num)
-    : main_loop_{std::make_unique<EventLoop>(true)},
+    : main_loop_{std::make_unique<EventLoop>(true, 5, 60)},
       acceptor_{std::make_unique<Acceptor>(main_loop_.get(), ip, port)},
       thread_num_{thread_num},
       thread_pool_{std::make_unique<ThreadPool>(thread_num_, "IO")} {
@@ -25,7 +25,7 @@ TcpServer::TcpServer(const std::string& ip, uint16_t port, int thread_num)
   // 创建从事件循环
   sub_loops_.reserve(thread_num_);
   for (int i = 0; i < thread_num_; i++) {
-    sub_loops_.emplace_back(std::make_unique<EventLoop>(false));
+    sub_loops_.emplace_back(std::make_unique<EventLoop>(false, 5, 60));
     auto lp = sub_loops_[i].get();
     // 超时回调
     lp->SetEpollTimeoutCallback(
@@ -47,7 +47,10 @@ void TcpServer::HandleNewConnection(std::unique_ptr<Socket> client_sock) {
   int id = client_sock->fd() % thread_num_;
   auto conn = std::make_shared<Connection>(sub_loops_[id].get(),
                                            std::move(client_sock));
-  conns_[conn->fd()] = conn;
+  {
+    std::unique_lock lock{mutex_};
+    conns_[conn->fd()] = conn;
+  }
   // 添加到sub_loop用来清除空闲连接
   sub_loops_[id]->NewConnection(conn);
 
@@ -79,7 +82,10 @@ void TcpServer::HandleCloseConnection(Connection::Ptr conn) {
   // 对方已关闭，有些系统检测不到，可以使用EPOLLIN，recv()返回0。
   // spdlog::info("component=tcp_server event=connection_close_detected fd={}",
   // conn->fd());
-  conns_.erase(conn->fd());
+  {
+    std::unique_lock lock{mutex_};
+    conns_.erase(conn->fd());
+  }
 }
 
 void TcpServer::HandleErrorConnection(Connection::Ptr conn) {
@@ -88,7 +94,10 @@ void TcpServer::HandleErrorConnection(Connection::Ptr conn) {
 
   // spdlog::info("component=tcp_server event=connection_error fd={}",
   // conn->fd());
-  conns_.erase(conn->fd());
+  {
+    std::unique_lock lock{mutex_};
+    conns_.erase(conn->fd());
+  }
 }
 
 void TcpServer::OnMessage(Connection::Ptr conn, std::string& message) {
@@ -119,4 +128,7 @@ void TcpServer::EpollTimeout(EventLoop* loop) {
   // ...
 }
 
-void TcpServer::RemoveConn(int fd) { conns_.erase(fd); }
+void TcpServer::RemoveConn(int fd) {
+  std::unique_lock lock{mutex_};
+  conns_.erase(fd);
+}
