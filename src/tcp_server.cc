@@ -34,37 +34,34 @@ TcpServer::TcpServer(const std::string& ip, uint16_t port, int thread_num)
   }
 }
 
-TcpServer::~TcpServer() {
-  for (auto [_, conn] : conns_) {
-    delete conn;
-  }
-}
+TcpServer::~TcpServer() = default;
 
 void TcpServer::Start() { main_loop_->Run(); }
 
 void TcpServer::HandleNewConnection(Socket* client_sock) {
   // TODO:设置到从事件循环中
   int id = client_sock->fd() % thread_num_;
-  Connection* conn = new Connection{sub_loops_[id].get(), client_sock};
+  auto conn = std::make_shared<Connection>(sub_loops_[id].get(), client_sock);
   conns_[conn->fd()] = conn;
   // 设置事件发生时的回调
   conn->SetCloseCallback(
-      [this](Connection* conn) { HandleCloseConnection(conn); });
+      [this](Connection::Ptr conn) { HandleCloseConnection(conn); });
   conn->SetErrorCallback(
-      [this](Connection* conn) { HandleErrorConnection(conn); });
-  conn->SetOnMessageCallback([this](Connection* conn, std::string& message) {
+      [this](Connection::Ptr conn) { HandleErrorConnection(conn); });
+  conn->SetOnMessageCallback([this](Connection::Ptr conn, std::string& message) {
     OnMessage(conn, message);
   });
   conn->SetSendCompeleteCallbace(
-      [this](Connection* conn) { SendComplete(conn); });
-  std::cout << std::format("accept client(fd={},ip={},port={}) ok.\n",
+      [this](Connection::Ptr conn) { SendComplete(conn); });
+  std::cout << std::format("TcpServer::HandleNewConnection() client(fd={},ip={},port={}) ok.\n",
                            conn->fd(), conn->ip(), conn->port());
 
   // for echo server
   new_connection_callback_(conn);
 }
 
-void TcpServer::HandleCloseConnection(Connection* conn) {
+void TcpServer::HandleCloseConnection(Connection::Ptr conn) {
+  std::cout << std::format("TcpServer::HandleCloseConnection() client(fd={}) disconnected.\n", conn->fd());
   // for echo server
   close_connection_callback_(conn);
 
@@ -72,19 +69,17 @@ void TcpServer::HandleCloseConnection(Connection* conn) {
   // std::cout << std::format("1client(eventfd={}) disconnected.\n",
   // conn->fd());
   conns_.erase(conn->fd());
-  delete conn;
 }
 
-void TcpServer::HandleErrorConnection(Connection* conn) {
+void TcpServer::HandleErrorConnection(Connection::Ptr conn) {
   // for echo server
   error_connection_callback_(conn);
 
   // std::cout << std::format("client(eventfd={}) error.\n", conn->fd());
   conns_.erase(conn->fd());
-  delete conn;
 }
 
-void TcpServer::OnMessage(Connection* conn, std::string& message) {
+void TcpServer::OnMessage(Connection::Ptr conn, std::string& message) {
   // for echo server
   on_message_callback_(conn, message);
 
@@ -98,7 +93,7 @@ void TcpServer::OnMessage(Connection* conn, std::string& message) {
   // conn->Send(tmp.data(), tmp.size());
 }
 
-void TcpServer::SendComplete(Connection* conn) {
+void TcpServer::SendComplete(Connection::Ptr conn) {
   // for echo server
   send_complete_callback_(conn);
 

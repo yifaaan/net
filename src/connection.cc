@@ -31,9 +31,9 @@ int Connection::fd() const { return client_sock_->fd(); }
 uint16_t Connection::port() const { return client_sock_->port(); }
 const std::string& Connection::ip() const { return client_sock_->ip(); }
 
-void Connection::CloseCallback() { close_callback_(this); }
+void Connection::CloseCallback() { close_callback_(shared_from_this()); }
 
-void Connection::ErrorCallback() { error_callback_(this); }
+void Connection::ErrorCallback() { error_callback_(shared_from_this()); }
 
 void Connection::HandleOnMessage() {
   char buffer[1024]{};
@@ -63,11 +63,15 @@ void Connection::HandleOnMessage() {
         // Calculate...
         std::cout << std::format("message (eventfd={}):{}", fd(), message);
 
-        on_message_callback_(this, message);
+        on_message_callback_(shared_from_this(), message);
       }
       break;
-    } else if (nread == 0) {  // 客户端连接已断开。
-      close_callback_(this);
+    } else if (nread == 0) {  // 客户端发FIN，关闭写，继续为0，连接已断开。
+      std::cout << std::format(
+          "Connection::HandleOnMessage() client(fd={}) nread=0, "
+          "disconnected.\n",
+          fd());
+      close_callback_(shared_from_this());
       break;
     }
   }
@@ -82,11 +86,11 @@ void Connection::WriteCallback() {
   // 数据已经发完，需要取消监听可写事件
   if (output_buffer_.size() == 0) {
     client_channel_->DisableWriting();
-    send_complete_callback_(this);
+    send_complete_callback_(shared_from_this());
   }
 }
 
 void Connection::Send(const char* data, size_t len) {
   output_buffer_.AppendWithHead(data, len);  // 将用户数据 保存到发送缓冲区
-  client_channel_->EnableWriting();  // 注册 写事件
+  client_channel_->EnableWriting();          // 注册 写事件
 }

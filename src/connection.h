@@ -11,8 +11,9 @@ class Socket;
 class Channel;
 
 // Channel分为专门处理客户连接的Acceptor 和 处理别的事件的Connection
-class Connection {
+class Connection : public std::enable_shared_from_this<Connection> {
  public:
+  using Ptr = std::shared_ptr<Connection>;
   Connection(EventLoop* loop, Socket* client_sock);
   ~Connection();
 
@@ -35,20 +36,20 @@ class Connection {
   void WriteCallback();
 
   // 设置断开连接的回调，TcpServer调用
-  void SetCloseCallback(std::function<void(Connection*)> cb) {
+  void SetCloseCallback(std::function<void(Ptr)> cb) {
     close_callback_ = std::move(cb);
   }
   // 设置连接错误的回调，TcpServer调用
-  void SetErrorCallback(std::function<void(Connection*)> cb) {
+  void SetErrorCallback(std::function<void(Ptr)> cb) {
     error_callback_ = std::move(cb);
   }
   // 设置收到客户端完整报文的回调，TcpServer调用
-  void SetOnMessageCallback(std::function<void(Connection*, std::string&)> cb) {
+  void SetOnMessageCallback(std::function<void(Ptr, std::string&)> cb) {
     on_message_callback_ = std::move(cb);
   }
 
   // 设置将output_buffer中所有数据写入到内核缓冲区后的回调，TcpServer调用
-  void SetSendCompeleteCallbace(std::function<void(Connection*)> cb) {
+  void SetSendCompeleteCallbace(std::function<void(Ptr)> cb) {
     send_complete_callback_ = std::move(cb);
   }
 
@@ -63,11 +64,11 @@ class Connection {
   Buffer output_buffer_;
 
   // 客户端断开连接的回调，TcpServer在创建Connection时需要指定
-  std::function<void(Connection*)> close_callback_;
+  std::function<void(Ptr)> close_callback_;
   // 客户端连接错误的回调，TcpServer在创建Connection时需要指定
-  std::function<void(Connection*)> error_callback_;
+  std::function<void(Ptr)> error_callback_;
   // 收到一个完整客户端报文的回调，TcpServer在创建Connection时需要指定
-  std::function<void(Connection*, std::string&)> on_message_callback_;
+  std::function<void(Ptr, std::string&)> on_message_callback_;
   // output_buffer中所有数据写入到内核缓冲区后的回调，TcpServer在创建Connection时需要指定
-  std::function<void(Connection*)> send_complete_callback_;
+  std::function<void(Ptr)> send_complete_callback_;
 };
