@@ -18,7 +18,8 @@ class EventLoop {
   void Run();
 
   void UpdateChannel(Channel* ch);
-
+  void RemoveChannel(Channel* ch);
+  
   void SetEpollTimeoutCallback(std::function<void(EventLoop*)> cb) {
     epoll_timeout_callback_ = std::move(cb);
   }

@@ -30,6 +30,10 @@ class Channel {
   void EnableWriting();
   // 取消写事件，并添加到对应的epoll
   void DisableWriting();
+  // 取消所有事件，并添加到对应的epoll
+  void DisableAll();
+  // 从epoll中删除
+  void RemoveFromEpoll();
   // 表示已添加到epoll
   void SetInEpoll();
 

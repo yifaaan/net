@@ -41,6 +41,16 @@ void Epoll::UpdateChannel(Channel* ch) {
   ch->SetInEpoll();
 }
 
+void Epoll::RemoveChannel(Channel* ch) {
+  if (ch->in_epoll()) {
+    std::cout << "Epoll::RemoveChannel() fd=" << ch->fd() << '\n';
+    if (epoll_ctl(fd_, EPOLL_CTL_DEL, ch->fd(), nullptr) == -1) {
+      std::cerr << "epoll_ctl() failed";
+      std::exit(-1);
+    }
+  }
+}
+
 // std::vector<epoll_event> Epoll::Loop(int timeout) {
 //   std::vector<epoll_event> evs;
 //   int n = ::epoll_wait(fd_, events_.data(), events_.size(), timeout);

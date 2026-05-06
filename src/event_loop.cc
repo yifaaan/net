@@ -12,6 +12,7 @@ EventLoop::~EventLoop() = default;
 
 void EventLoop::UpdateChannel(Channel* ch) { epoll_->UpdateChannel(ch); }
 
+void EventLoop::RemoveChannel(Channel* ch) { epoll_->RemoveChannel(ch); }
 void EventLoop::Run() {
   // std::cout << "EventLoop::Run() thread is " << std::this_thread::get_id()
   //           << "\n";

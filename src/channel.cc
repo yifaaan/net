@@ -37,12 +37,23 @@ void Channel::DisableWriting() {
   loop_->UpdateChannel(this);
 }
 
+void Channel::DisableAll() {
+  events_ = 0;
+  loop_->UpdateChannel(this);
+}
+
+void Channel::RemoveFromEpoll() {
+  loop_->RemoveChannel(this);
+  in_epoll_ = false;
+}
 void Channel::SetInEpoll() { in_epoll_ = true; }
 
 void Channel::SetRevents(uint32_t e) { revents_ = e; }
 
 void Channel::HandleEvent() {
-  if (revents_ & (EPOLLIN | EPOLLPRI)) { // 先处理读，如果对方发送了FIN，还能继续读取数据。
+  if (revents_ &
+      (EPOLLIN |
+       EPOLLPRI)) {  // 先处理读，如果对方发送了FIN，还能继续读取数据。
     std::cout << std::format(
         "Channel::HandleEvent() client(fd={}) read data.\n", fd());
     //  普通数据  带外数据
@@ -55,14 +66,17 @@ void Channel::HandleEvent() {
   } else if (revents_ & EPOLLRDHUP) {  // client 关闭写端
     std::cout << std::format(
         "Channel::HandleEvent() client(fd={}) disconnected.\n", fd());
+    // remove
     close_callback_();
   } else {  // 其它事件，都视为错误。
     std::cout << std::format("Channel::HandleEvent() client(fd={}) error.\n",
                              fd());
+
     error_callback_();
   }
 
-  // if (revents_ & EPOLLRDHUP) { // client 关闭写端，这里先处理RDHUP，就不能继续读完数据
+  // if (revents_ & EPOLLRDHUP) { // client
+  // 关闭写端，这里先处理RDHUP，就不能继续读完数据
   //   std::cout << std::format("Channel::HandleEvent() client(fd={})
   //   disconnected.\n", fd()); close_callback_();
   // } else if (revents_ & (EPOLLIN | EPOLLPRI)) {

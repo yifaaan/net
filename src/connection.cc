@@ -31,9 +31,15 @@ int Connection::fd() const { return client_sock_->fd(); }
 uint16_t Connection::port() const { return client_sock_->port(); }
 const std::string& Connection::ip() const { return client_sock_->ip(); }
 
-void Connection::CloseCallback() { close_callback_(shared_from_this()); }
+void Connection::CloseCallback() {
+  client_channel_->RemoveFromEpoll();
+  close_callback_(shared_from_this());
+}
 
-void Connection::ErrorCallback() { error_callback_(shared_from_this()); }
+void Connection::ErrorCallback() {
+  client_channel_->RemoveFromEpoll();
+  error_callback_(shared_from_this());
+}
 
 void Connection::HandleOnMessage() {
   char buffer[1024]{};
@@ -66,7 +72,7 @@ void Connection::HandleOnMessage() {
         on_message_callback_(shared_from_this(), message);
       }
       break;
-    } else if (nread == 0) {  // 客户端发FIN，关闭写，继续为0，连接已断开。
+    } else if (nread == 0) {  // 客户端发FIN，关闭了写端，继续为0，连接已断开。
       std::cout << std::format(
           "Connection::HandleOnMessage() client(fd={}) nread=0, "
           "disconnected.\n",
