@@ -4,8 +4,8 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-#include <format>
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 #include "connection.h"
 #include "epoll.h"
@@ -54,8 +54,7 @@ void Channel::HandleEvent() {
   if (revents_ &
       (EPOLLIN |
        EPOLLPRI)) {  // 先处理读，如果对方发送了FIN，还能继续读取数据。
-    std::cout << std::format(
-        "Channel::HandleEvent() client(fd={}) read data.\n", fd());
+    spdlog::info("Channel::HandleEvent() client(fd={}) read data.", fd());
     //  普通数据  带外数据
     // 接收缓冲区中有数据可以读。
     read_callback_();
@@ -64,13 +63,11 @@ void Channel::HandleEvent() {
     // 将Connection中的output_buffer写入socket
     write_callback_();
   } else if (revents_ & EPOLLRDHUP) {  // client 关闭写端
-    std::cout << std::format(
-        "Channel::HandleEvent() client(fd={}) disconnected.\n", fd());
+    spdlog::info("Channel::HandleEvent() client(fd={}) disconnected.", fd());
     // remove
     close_callback_();
   } else {  // 其它事件，都视为错误。
-    std::cout << std::format("Channel::HandleEvent() client(fd={}) error.\n",
-                             fd());
+    spdlog::info("Channel::HandleEvent() client(fd={}) error.", fd());
 
     error_callback_();
   }
